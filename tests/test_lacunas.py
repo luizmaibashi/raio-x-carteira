@@ -59,3 +59,21 @@ def test_tela_mostra_pontos_de_atencao_da_consultora():
     assert not at.exception, at.exception
     textos = " ".join(x.value for x in at.info)
     assert "Sua decisão depende de um cliente" in textos and "Com 60 dias" in textos
+
+
+def test_repasse_em_contrato_so_quando_mantem_parte_do_preco():
+    assert lacunas.repasse_em_contrato(0) is None
+    x = lacunas.repasse_em_contrato(0.25)
+    assert x.premissa == "P09" and "mantém 25% do preço" in x.texto
+
+
+def test_reducao_de_30_avisa_so_quando_vira_a_resposta():
+    carteira = [_c("A", 296_200, True), _c("B", 3_800, False)]   # sem redução perde; com redução ganha
+    com = aliquota_t(2027, True)
+    x = lacunas.reducao_nao_marcada(carteira, 90_000, 2027, T, com, 0)
+    assert x.premissa == "P06" and "passa a compensar" in x.texto
+    assert lacunas.reducao_nao_marcada(carteira, 90_000, 2027, T, com, 0, marcada=True) is None
+    tudo_credito = [_c("A", 300_000, True)]                         # já ganha sem redução: nada a avisar
+    assert lacunas.reducao_nao_marcada(tudo_credito, 90_000, 2027, T, com, 0) is None
+    muito_sem = [_c("A", 150_000, True), _c("B", 150_000, False)]  # perde mesmo com redução
+    assert lacunas.reducao_nao_marcada(muito_sem, 90_000, 2027, T, com, 0) is None

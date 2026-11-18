@@ -61,6 +61,31 @@ def prazo_recebimento(prazo_dias: int) -> Lacuna | None:
     return Lacuna("prazo", "Imposto antes do dinheiro", texto, "P21")
 
 
-def avaliar(clientes: list[Cliente], folha12, ano: int, t, r, k=0, prazo_dias: int = 0) -> list[Lacuna]:
-    achadas = (concentracao(clientes, folha12, ano, t, r, k), prazo_recebimento(prazo_dias))
+def repasse_em_contrato(r) -> Lacuna | None:
+    """P09. Manter parte do preço supõe que o cliente aceite: contrato privado não se reajusta sozinho."""
+    if Decimal(str(r)) <= 0:
+        return None
+    texto = (f"O resultado supõe que você mantém {pct(Decimal(str(r)), 0)} do preço, ou seja, que o cliente aceita "
+             "pagar parte do imposto novo. Contrato não se reajusta sozinho com a reforma: isso depende de uma "
+             "cláusula de repasse ou de negociação. Confira o que os seus contratos dizem.")
+    return Lacuna("repasse", "Preço depende do contrato", texto, "P09")
+
+
+def reducao_nao_marcada(clientes: list[Cliente], folha12, ano: int, t, t_com_reducao, r, k=0,
+                        marcada: bool = False) -> Lacuna | None:
+    """P06. Avisa só quando a redução de 30% viraria a resposta a favor de recolher por fora."""
+    if marcada or t_com_reducao is None:
+        return None
+    if _diferenca(clientes, folha12, ano, t, r, k) > 0 or _diferenca(clientes, folha12, ano, t_com_reducao, r, k) <= 0:
+        return None
+    texto = ("Se a sua profissão é regulamentada (contador, economista, advogado e outras) e você tem registro no "
+             "conselho, o IBS/CBS por fora pode ter redução de 30%. Com ela, recolher por fora passa a compensar "
+             "nesta carteira. Marque a opção na barra lateral e confirme a elegibilidade com o seu contador.")
+    return Lacuna("reducao_30", "A redução de 30% mudaria a resposta", texto, "P06")
+
+
+def avaliar(clientes: list[Cliente], folha12, ano: int, t, r, k=0, prazo_dias: int = 0, t_com_reducao=None,
+            reducao_marcada: bool = False) -> list[Lacuna]:
+    achadas = (concentracao(clientes, folha12, ano, t, r, k), prazo_recebimento(prazo_dias), repasse_em_contrato(r),
+               reducao_nao_marcada(clientes, folha12, ano, t, t_com_reducao, r, k, reducao_marcada))
     return [x for x in achadas if x is not None]

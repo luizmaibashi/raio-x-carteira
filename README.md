@@ -31,7 +31,7 @@ Para cada carteira, a tela mostra:
 - **Cliente a cliente:** quem rende e quem custa se ele recolher por fora.
 - **Preço a manter:** quanto do preço de hoje o prestador precisa segurar para a troca compensar. É o número que ele leva para a negociação.
 - **Linha do tempo de 2027 a 2033**, com a alíquota de 2028 em diante como cenário explícito.
-- **Pontos de atenção** por regra determinística: receita concentrada num cliente e imposto que vence antes do recebimento.
+- **Pontos de atenção** por regra determinística: receita concentrada num cliente, imposto que vence antes do recebimento, preço que depende de cláusula de repasse no contrato e redução de 30% que mudaria a resposta.
 - **Em linguagem simples:** explicação e o que dizer a cada cliente, escritas por IA, com todos os números conferidos.
 
 A carteira entra de três formas: exemplo pronto, CSV ou os XMLs das notas fiscais de serviço (NFS-e, padrão nacional). Na leitura dos XMLs, o CPF é descartado.
@@ -43,7 +43,7 @@ A carteira entra de três formas: exemplo pronto, CSV ou os XMLs das notas fisca
 3. **Conferência com o motor oficial.** O cálculo é conferido nas [calculadoras de código aberto da Receita Federal](https://github.com/ReceitaFederal) (licença MIT), que rodam como serviço separado: 19 de 19 casos conferem. Na nuvem, a tela mostra essa conferência gravada.
 4. **Toda regra cita uma premissa** (P01 a P21), com fonte legal, data de consulta e grau de certeza.
 5. **Fora do escopo dá erro, não número aproximado.** Exemplo: receita acima de R$ 3,6 milhões.
-6. **113 testes automatizados**, incluindo testes da tela.
+6. **115 testes automatizados**, incluindo testes da tela.
 
 ## Arquitetura
 
@@ -52,7 +52,7 @@ A carteira entra de três formas: exemplo pronto, CSV ou os XMLs das notas fisca
 | `scripts/gerar_anexos.py` → `dados/anexos_simples.json` | Tabelas do Simples (faixas e partilha de 2027 a 2033) extraídas do texto oficial |
 | `raio_x/das.py` | Fator R, faixa, alíquota efetiva do DAS, parte de CBS/IBS dentro do DAS e teto de 5% do ISS |
 | `raio_x/modelo.py` | Simples puro × IBS/CBS por fora, por cliente e na carteira; ponto de indiferença; preço a manter |
-| `raio_x/lacunas.py` | Pontos de atenção por regra (concentração P20, prazo de recebimento P21) |
+| `raio_x/lacunas.py` | Pontos de atenção por regra (concentração P20, prazo de recebimento P21, repasse em contrato P09, redução de 30% P06) |
 | `raio_x/explicacao.py` | Fatos para a IA (Gemini), verificador de números, duas tentativas e depois descarta |
 | `raio_x/entrada.py`, `raio_x/nfse.py` | Carteira por CSV ou XML de NFS-e |
 | `raio_x/receita.py`, `scripts/gravar_conferencia.py` | Cliente HTTP do motor da Receita e conferência gravada |
@@ -77,7 +77,7 @@ Os testes de integração com as calculadoras da Receita (portas 8080 e 8082) s�
 - A faixa do Simples não é recalculada quando o preço muda com o recolhimento por fora.
 - O efeito no caixa do split payment e do prazo de recebimento aparece como alerta, não como número.
 - Alíquotas de 2028 em diante são cenário, porque ainda não há alíquota oficial de IBS.
-- Ainda ficam de fora: cláusula de repasse em contrato, a elegibilidade à redução de 30% (depende de registro em conselho) e a revisão de um contador.
+- Cláusula de repasse e elegibilidade à redução de 30% (registro em conselho) aparecem como alerta: a tela não lê contratos nem consulta conselhos. Falta a revisão de um contador.
 
 ## Licença
 

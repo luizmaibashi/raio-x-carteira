@@ -357,7 +357,8 @@ with area_resultado:
 
     _explicacao_ia()
 
-    achadas = lacunas.avaliar(clientes, folha, ano, t, r, k, prazo)   # P20, P21
+    achadas = lacunas.avaliar(clientes, folha, ano, t, r, k, prazo,   # P20, P21, P09, P06
+                              t_com_reducao=t_por_ano(t33, True)[ano], reducao_marcada=reducao)
     if achadas:
         _secao(st, "Pontos de atenção", "O que o cálculo acima não mede e pode mudar a sua decisão.")
         for x in achadas:
