@@ -4,6 +4,7 @@ from __future__ import annotations
 import datetime as dt
 import io
 import json
+import os
 from decimal import Decimal
 from pathlib import Path
 
@@ -22,6 +23,7 @@ EXEMPLOS = RAIZ / "dados" / "exemplos"
 PERFIS = {p["nome"]: p for p in json.loads((EXEMPLOS / "perfis.json").read_text(encoding="utf-8"))}
 EXEMPLO_XML = RAIZ / "dados" / "exemplos" / "nfse"
 CONFERENCIA = RAIZ / "dados" / "conferencia_receita.json"
+EXPLICACOES = RAIZ / "dados" / "explicacoes_ia.json"
 # P03: quem optou por IBS/CBS por fora no 1º semestre de 2027 pode cancelar até 20/12/2026.
 PRAZO_CANCELAMENTO = dt.date(2026, 12, 20)
 OPCOES_TOMADOR = list(TOMADORES_CREDITO)
@@ -240,6 +242,58 @@ def _linha(df: pd.DataFrame, r_virada) -> alt.Chart:
     return _estilo(camadas.properties(height=280))
 
 
+# ---------------------------------------------------------------- explicação por IA
+def _chave_api() -> str | None:
+    try:
+        return st.secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+    except Exception:   # sem secrets.toml o Streamlit levanta erro ao ler st.secrets
+        return os.environ.get("ANTHROPIC_API_KEY")
+
+
+def _mostrar_explicacao(saida: dict, fatos, origem: str) -> None:
+    from raio_x.explicacao import numeros
+    texto = saida["resumo"] + " " + " ".join(c["argumento"] for c in saida["clientes"])
+    st.markdown(saida["resumo"])
+    with st.expander("Como conversar com cada cliente sobre preço"):
+        for c in saida["clientes"]:
+            st.markdown(f"**{fatos.nomes[c['id']]}** — {c['argumento']}")
+    st.caption(f"Texto escrito por IA (Claude) {origem}. Os {len(numeros(texto))} números citados foram conferidos "
+               "um a um contra o cálculo: texto com número que não existe no cálculo é descartado.")
+
+
+def _explicacao_ia() -> None:
+    from raio_x.explicacao import ErroExplicacao, gerar, montar_fatos
+    _secao(st, "Em linguagem simples", "O que esse resultado quer dizer e como conversar com cada cliente.")
+    fatos = montar_fatos(clientes, folha, ano, t, r, k, reducao)
+    gravadas = st.session_state.setdefault("_explicacoes", {})
+    if fatos.chave in gravadas:
+        _mostrar_explicacao(gravadas[fatos.chave], fatos, "nesta sessão")
+        return
+    arquivo = ler_conferencia(EXPLICACOES) or {}   # mesmo leitor de JSON da conferência
+    if fatos.chave in arquivo:
+        g = arquivo[fatos.chave]
+        quando = dt.datetime.fromisoformat(g["gerado_em"]).strftime("%d/%m/%Y")
+        _mostrar_explicacao(g, fatos, f"e gravado em {quando}")
+        return
+    chave = _chave_api()
+    if not chave:
+        st.caption("A explicação por IA está gravada para os perfis de exemplo no cenário inicial (2027, 0% do "
+                   "preço mantido). Mude o perfil ou volte os controles para vê-la.")
+        return
+    if st.button("Escrever explicação com IA", icon=":material/edit_note:"):
+        import anthropic
+        with st.spinner("Escrevendo e conferindo os números…"):
+            try:
+                gravadas[fatos.chave] = gerar(anthropic.Anthropic(api_key=chave), fatos)
+            except (ErroExplicacao, anthropic.APIError) as e:
+                st.warning(f"Explicação descartada: {e}")
+                return
+        _mostrar_explicacao(gravadas[fatos.chave], fatos, "nesta sessão")
+    else:
+        st.caption("Os nomes dos clientes não são enviados à IA: ela recebe só os números do cálculo, com os "
+                   "clientes como C1, C2...")
+
+
 # ---------------------------------------------------------------- resultado
 ganho = res.prestador_h - res.prestador_s
 s = res.indiferenca_peso_com_credito
@@ -294,6 +348,8 @@ with area_resultado:
             st.info("**Prazos:** a opção por recolher por fora no 1º semestre de 2027 encerrou em 30/10/2026 e "
                     "pode ser cancelada até 20/12/2026; a próxima janela de opção abre em março de 2027.",
                     icon=":material/event:")
+
+    _explicacao_ia()
 
     _secao(st, "Cliente a cliente",
            f"Azul: recolher por fora te rende dinheiro nesse cliente. Vermelho: te custa, mantendo {r_pct} do preço.")
