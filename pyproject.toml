@@ -1,0 +1,16 @@
+[project]
+name = "raio-x-carteira"
+version = "0.1.0"
+description = "Raio-X da Carteira: efeito da reforma tributária (IBS/CBS) para prestadores do Simples Nacional"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools]
+packages = ["raio_x"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
