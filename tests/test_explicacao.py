@@ -63,7 +63,7 @@ def test_gera_e_devolve_quando_numeros_conferem():
     out = gerar(falso, f)
     assert out["resumo"].startswith("O Simples puro")
     pedido = falso.pedidos[0]
-    assert pedido["model"] == "gemini-3.8-flash"
+    assert pedido["model"] == "gemini-3.1-flash-lite"
     assert pedido["config"].response_mime_type == "application/json"
     assert pedido["config"].response_json_schema == ESQUEMA
 

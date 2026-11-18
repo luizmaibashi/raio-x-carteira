@@ -20,8 +20,8 @@ from raio_x.das import calcular
 from raio_x.modelo import Cliente, avaliar_carteira, poder_de_preco_indiferenca
 from raio_x.painel import brl, pct
 
-# Gemini estável mais recente na lista oficial de modelos (consultada em 18/11/2026).
-MODELO = "gemini-3.8-flash"
+# Gemini estável mais barato na lista oficial (US$ 0,25 / 1,50 por milhão de tokens; consultada em 18/11/2026).
+MODELO = "gemini-3.1-flash-lite"
 # P03: cancelamento da opção pelo regime regular de IBS/CBS no 1º semestre de 2027.
 PRAZO_CANCELAMENTO = "20/12/2026"
 

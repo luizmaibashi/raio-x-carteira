@@ -35,6 +35,9 @@ def main() -> int:
     cliente = genai.Client()   # lê GEMINI_API_KEY do ambiente
     for p in perfis:
         fatos = fatos_do_perfil(p)
+        if fatos.chave in gravadas:
+            print(f"{p['nome']}: já gravado, pulando", flush=True)
+            continue
         saida = gerar(cliente, fatos)
         texto = saida["resumo"] + " " + " ".join(c["argumento"] for c in saida["clientes"])
         gravadas[fatos.chave] = {
@@ -42,8 +45,9 @@ def main() -> int:
             "gerado_em": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
             "numeros_conferidos": len(numeros(texto)), **saida,
         }
-        print(f"{p['nome']}: ok ({gravadas[fatos.chave]['numeros_conferidos']} números conferidos)")
-    SAIDA.write_text(json.dumps(gravadas, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        # Grava a cada perfil: se a API cair no meio, o que já passou pelo verificador fica.
+        SAIDA.write_text(json.dumps(gravadas, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"{p['nome']}: ok ({gravadas[fatos.chave]['numeros_conferidos']} números conferidos)", flush=True)
     return 0
 
 
