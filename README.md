@@ -13,7 +13,7 @@ Hack Brasil 2026 · trilha Pagamentos e finanças
 
 A partir de 2027, quem contrata um prestador do Simples Nacional só aproveita como crédito a parte de IBS/CBS que está dentro do DAS, uma fatia pequena. Para dar crédito cheio ao cliente, o prestador pode recolher IBS/CBS por fora, pelo regime regular, sem sair do Simples. Só que aí ele paga mais imposto. A opção é semestral, e quem já optou para o 1º semestre de 2027 pode cancelar até **20/12/2026**.
 
-Se compensa ou não, depende de quem são os clientes: empresa do regime regular usa o crédito; empresa do Simples puro e pessoa física, não. As calculadoras que existem comparam regimes para a empresa inteira. O Raio-X olha **cada cliente**.
+Se compensa ou não, depende de quem são os clientes: empresa do regime regular usa o crédito; empresa do Simples puro e pessoa física, não. Mais de 70% das empresas do Simples vendem para outras empresas, segundo o estudo *Raio-X do Simples Nacional em 2025*, do IBPT ([InfoMoney, 28/08/2025](https://www.infomoney.com.br/business/reforma-tributaria-expoe-fragilidades-do-simples-nacional-no-modelo-b2b-diz-estudo/)). As calculadoras que existem comparam regimes para a empresa inteira. O Raio-X olha **cada cliente**.
 
 ## O que a demo mostra
 
