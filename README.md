@@ -34,16 +34,16 @@ Para cada carteira, a tela mostra:
 - **Pontos de atenção** por regra determinística: receita concentrada num cliente, imposto que vence antes do recebimento, preço que depende de cláusula de repasse no contrato e redução de 30% que mudaria a resposta.
 - **Em linguagem simples:** explicação e o que dizer a cada cliente, escritas por IA, com todos os números conferidos.
 
-A carteira entra de três formas: exemplo pronto, CSV ou os XMLs das notas fiscais de serviço (NFS-e, padrão nacional). Na leitura dos XMLs, o CPF é descartado.
+A carteira entra de três formas: exemplo pronto, CSV ou os XMLs das notas fiscais de serviço (NFS-e, padrão nacional). O leitor segue o leiaute nacional 1.01: os XMLs de exemplo validam contra o XSD oficial ([`scripts/validar_nfse_xsd.py`](scripts/validar_nfse_xsd.py)). Na leitura, o CPF é descartado.
 
 ## Por que dá para confiar nos números
 
 1. **Nenhum número sai de LLM.** Alíquota, imposto e resultado vêm de código determinístico. A IA só escreve texto: recebe os números já calculados, com os clientes trocados por C1, C2…, e [um verificador](raio_x/explicacao.py) confere cada número citado. Texto com número que não existe no cálculo é descartado.
 2. **Tabelas da lei geradas por script.** [`scripts/gerar_anexos.py`](scripts/gerar_anexos.py) lê os Anexos III e V do Simples Nacional no texto oficial publicado pelo Senado e grava URL, data e SHA-256 da fonte. O gerador falha se uma linha da partilha não somar 100%.
 3. **Conferência com o motor oficial.** O cálculo é conferido nas [calculadoras de código aberto da Receita Federal](https://github.com/ReceitaFederal) (licença MIT), que rodam como serviço separado: 19 de 19 casos conferem. Na nuvem, a tela mostra essa conferência gravada.
-4. **Toda regra cita uma premissa** (P01 a P21), com fonte legal, data de consulta e grau de certeza.
+4. **Toda regra cita uma premissa** (P01 a P22), com fonte legal, data de consulta e grau de certeza.
 5. **Fora do escopo dá erro, não número aproximado.** Exemplo: receita acima de R$ 3,6 milhões.
-6. **115 testes automatizados**, incluindo testes da tela.
+6. **119 testes automatizados**, incluindo testes da tela.
 
 ## Arquitetura
 

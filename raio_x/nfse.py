@@ -6,9 +6,10 @@ coluna `tomador` pré-preenchida só onde o XML basta (pessoa física). O regime
 cada tomador PJ (regular, simples, simples_h, isento) não está na nota: fica em
 branco e o usuário completa; o leitor de CSV recusa linha em branco (regra 4).
 
-Campos lidos (leiaute da NFS-e nacional, por nome local, independente de namespace):
-  infNFSe/DPS/infDPS/dhEmi                              data de emissão
-  infNFSe/DPS/infDPS/toma/{CNPJ|CPF|NIF|xNome}          tomador
+Campos lidos (leiaute nacional 1.01, conferido no XSD oficial de 09/02/2026; por nome local):
+  infNFSe/DPS/infDPS/dCompet                            competência (filtro de período, P22)
+  infNFSe/DPS/infDPS/dhEmi                              emissão (só se faltar dCompet)
+  infNFSe/DPS/infDPS/toma/{CNPJ|CPF|NIF|cNaoNIF|xNome}  tomador
   infNFSe/DPS/infDPS/valores/vServPrest/vServ           valor do serviço
   infNFSe/DPS/infDPS/valores/vDescCondIncond/vDescIncond desconto incondicionado
 
@@ -17,7 +18,7 @@ Privacidade (regra 5): o CPF é lido só para saber que o tomador é pessoa fís
 em memória e não vai para o CSV (o rótulo é a razão social).
 
 Limitações explícitas: nota cancelada não é detectável pelo XML da NFS-e (evento
-separado): não inclua canceladas. Tomador no exterior (NIF) -> erro, fora do escopo.
+separado): não inclua canceladas. Tomador no exterior (NIF ou cNaoNIF) -> erro, fora do escopo.
 """
 from __future__ import annotations
 
@@ -116,11 +117,12 @@ def ler_notas(arquivos: list[tuple[str, bytes]], inicio: dt.date | None = None,
             dps = _filho(inf, "DPS", "infDPS")
             if dps is None:
                 raise ErroNFSe(f"{origem}: sem DPS/infDPS")
-            data_txt = _texto(dps, "dhEmi")
+            # P22: a receita entra no período pela competência (dCompet); dhEmi só se dCompet faltar.
+            campo = "dCompet" if _texto(dps, "dCompet") else "dhEmi"
             try:
-                data = dt.datetime.fromisoformat(data_txt).date()
+                data = dt.datetime.fromisoformat(_texto(dps, campo)).date()
             except (TypeError, ValueError):
-                raise ErroNFSe(f"{origem}: dhEmi ausente ou inválido") from None
+                raise ErroNFSe(f"{origem}: {campo} ausente ou inválido") from None
             if (inicio and data < inicio) or (fim and data > fim):
                 fora += 1
                 continue
@@ -132,7 +134,7 @@ def ler_notas(arquivos: list[tuple[str, bytes]], inicio: dt.date | None = None,
                 raise ErroNFSe(f"{origem}: valor líquido negativo")
 
             toma = _filho(dps, "toma")
-            if toma is not None and _texto(toma, "NIF"):
+            if toma is not None and (_texto(toma, "NIF") or _texto(toma, "cNaoNIF") is not None):
                 raise ErroNFSe(f"{origem}: tomador no exterior (NIF) fora do escopo do protótipo")
             cnpj = _texto(toma, "CNPJ") if toma is not None else None
             if cnpj:

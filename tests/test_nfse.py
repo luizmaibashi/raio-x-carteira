@@ -8,7 +8,7 @@ import pytest
 
 from raio_x.entrada import ErroEntrada, ler_carteira_csv
 from raio_x.nfse import ROTULO_PF, ErroNFSe, ler_notas, para_csv
-from tests.nfse_sintetica import nota
+from tests.nfse_sintetica import nota, nota_completa
 
 RAIZ = Path(__file__).resolve().parent.parent
 CNPJ_A, CNPJ_B, CPF = "11111111000100", "22222222000100", "12345678900"
@@ -93,3 +93,30 @@ def test_exemplos_sinteticos_e_script(tmp_path):
     assert "5 notas" in p.stdout
     linhas = saida.read_text(encoding="utf-8").splitlines()
     assert linhas[0] == "cliente;valor_12m;tomador" and len(linhas) == 4
+
+
+def test_nota_completa_do_leiaute_oficial():
+    """Leiaute 1.01 inteiro (o mesmo dos exemplos validados no XSD): os campos ao redor não atrapalham."""
+    r = ler_notas(arq(
+        nota_completa(1, "2026-03-01T10:00:00-03:00", "1000.00", cnpj=CNPJ_A, nome="Alfa", desc_incond="100.00"),
+        nota_completa(2, "2026-03-02T10:00:00-03:00", "200.00", cpf=CPF, nome="Fulano"),
+    ))
+    assert sorted((t.rotulo, t.valor) for t in r.tomadores) == [("Alfa", D("900.00")), (ROTULO_PF, D("200.00"))]
+
+
+def test_periodo_usa_a_competencia_e_nao_a_emissao():
+    # Emitida em janeiro de 2027 com competência de dezembro de 2026: entra em 2026 (P22).
+    n = nota_completa(1, "2027-01-05T10:00:00-03:00", "500.00", cnpj=CNPJ_A, nome="Alfa", d_compet="2026-12-20")
+    r = ler_notas(arq(n), inicio=dt.date(2026, 1, 1), fim=dt.date(2026, 12, 31))
+    assert (r.notas_lidas, r.fora_do_periodo) == (1, 0)
+
+
+def test_tomador_exterior_sem_nif_tambem_fica_fora():
+    with pytest.raises(ErroNFSe, match="exterior"):
+        ler_notas(arq(nota_completa(1, "2026-03-01T10:00:00-03:00", "1.00", nao_nif=0, nome="Exterior")))
+
+
+def test_exemplos_da_demo_sao_o_leiaute_completo():
+    pasta = RAIZ / "dados" / "exemplos" / "nfse"
+    r = ler_notas([(p.name, p.read_bytes()) for p in sorted(pasta.glob("*.xml"))])
+    assert r.notas_lidas == 5 and all(b"Signature" in p.read_bytes() for p in pasta.glob("*.xml"))
