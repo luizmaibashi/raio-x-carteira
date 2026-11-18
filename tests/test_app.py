@@ -51,6 +51,17 @@ def test_tela_com_xml_exige_regime_dos_pj():
     _botao(at, "Notas (XML)").click().run()
     assert not at.exception
     assert any("Informe o regime" in w.value for w in at.warning)
+    # C12: regime ainda não informado aparece como célula vazia na tabela, não escrito "None".
+    editor = at.dataframe[0].proto
+    assert editor.HasField("placeholder") and editor.placeholder == ""
+
+
+def test_campos_em_reais_sem_casas_decimais():
+    """C13: folha e créditos aparecem como "90000", não "90000.00" (o Streamlit não formata em pt-BR)."""
+    at = _app().run()
+    formatos = {n.label.split(",")[0]: n.proto.format for n in at.number_input}
+    assert formatos["Folha + pró-labore + encargos"] == "%.0f"
+    assert formatos["Créditos de IBS/CBS das suas compras se recolher por fora"] == "%.0f"
 
 
 def test_csv_invalido_nao_deixa_o_resultado_anterior_na_tela():

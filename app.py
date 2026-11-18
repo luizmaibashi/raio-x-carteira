@@ -147,12 +147,12 @@ with st.sidebar:
 
     st.header("2. Sua empresa")
     folha = st.number_input("Folha + pró-labore + encargos, 12 meses (R$)", min_value=0.0, step=1_000.0,
-                            format="%.2f", key="folha")
+                            format="%.0f", key="folha")
     reducao = st.checkbox("Profissão regulamentada com redução de 30% (ex.: economista, contador)", key="reducao")
     prazo = st.number_input("Prazo médio para receber dos clientes (dias)", min_value=0, max_value=365, step=5,
                             key="prazo", help="Só entra nos pontos de atenção: o cálculo não mede efeito no caixa.")
     k = st.number_input("Créditos de IBS/CBS das suas compras se recolher por fora, 12 meses (R$)", min_value=0.0, value=0.0,
-                        step=100.0, format="%.2f")
+                        step=100.0, format="%.0f")
 
     st.header("3. Cenário")
     t33 = st.slider("CBS + IBS em 2033 (cenário, %)", 20, 32, 27, 1, format="%d%%",
@@ -174,7 +174,8 @@ ano = c_ano.selectbox("Ano", ANOS, index=0)
 
 _secao(area_carteira, "Sua carteira", st.session_state.resumo or "Escolha uma entrada na barra lateral.")
 editada = area_carteira.data_editor(
-    st.session_state.carteira, num_rows="dynamic", width="stretch", hide_index=True,
+    # placeholder="": valor ausente (regime de PJ, que a nota não traz) aparece como célula vazia, não "None".
+    st.session_state.carteira, num_rows="dynamic", width="stretch", hide_index=True, placeholder="",
     column_config={
         "cliente": st.column_config.TextColumn("Cliente", required=True),
         "valor_12m": st.column_config.NumberColumn("Faturado em 12 meses (R$)", min_value=0.0, format="localized",
