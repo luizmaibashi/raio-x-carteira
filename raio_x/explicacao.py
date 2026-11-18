@@ -20,7 +20,8 @@ from raio_x.das import calcular
 from raio_x.modelo import Cliente, avaliar_carteira, poder_de_preco_indiferenca
 from raio_x.painel import brl, pct
 
-MODELO = "claude-opus-5-5"
+# Gemini estável mais recente na lista oficial de modelos (consultada em 18/11/2026).
+MODELO = "gemini-3.8-flash"
 # P03: cancelamento da opção pelo regime regular de IBS/CBS no 1º semestre de 2027.
 PRAZO_CANCELAMENTO = "20/12/2026"
 
@@ -152,25 +153,37 @@ def _texto_completo(saida: dict) -> str:
 
 
 def _pedir(cliente, fatos: Fatos, correcao: str | None) -> dict:
+    """Uma chamada ao Gemini (`google.genai.Client`) com saída JSON presa ao ESQUEMA."""
+    from google.genai import types
+
     pedido = "FATOS (calculados pelo protótipo; são os únicos números que você pode citar):\n" + \
         json.dumps(fatos.dados, ensure_ascii=False, indent=2)
-    mensagens = [{"role": "user", "content": pedido}]
-    if correcao:
-        mensagens.append({"role": "user", "content": correcao})
-    resp = cliente.beta.messages.create(
-        model=MODELO, max_tokens=16000, system=SISTEMA, messages=mensagens,
-        output_config={"effort": "medium", "format": {"type": "json_schema", "schema": ESQUEMA}},
-        # Recusa do classificador de segurança: a API tenta de novo em outro modelo na mesma chamada.
-        betas=["server-side-fallback-2026-07-01"], fallbacks="default",
+    partes = [types.Part(text=pedido)] + ([types.Part(text=correcao)] if correcao else [])
+    resp = cliente.models.generate_content(
+        model=MODELO, contents=[types.Content(role="user", parts=partes)],
+        config=types.GenerateContentConfig(
+            system_instruction=SISTEMA, max_output_tokens=16000,
+            response_mime_type="application/json", response_json_schema=ESQUEMA,
+        ),
     )
-    if resp.stop_reason == "refusal":
-        raise ErroExplicacao("o modelo recusou o pedido")
-    if resp.stop_reason == "max_tokens":
-        raise ErroExplicacao("resposta cortada pelo limite de tokens")
-    texto = next((b.text for b in resp.content if b.type == "text"), None)
-    if texto is None:
+    bloqueio = getattr(resp.prompt_feedback, "block_reason", None)
+    if bloqueio:
+        raise ErroExplicacao(f"o modelo recusou o pedido ({bloqueio})")
+    if not resp.candidates:
         raise ErroExplicacao("resposta sem texto")
-    saida = json.loads(texto)
+    fim = resp.candidates[0].finish_reason
+    if fim == "MAX_TOKENS":
+        raise ErroExplicacao("resposta cortada pelo limite de tokens")
+    if fim not in ("STOP", None):   # SAFETY, RECITATION, PROHIBITED_CONTENT...
+        raise ErroExplicacao(f"o modelo recusou o pedido ({fim})")
+    partes_resp = resp.candidates[0].content.parts if resp.candidates[0].content else None
+    texto = "".join(pt.text for pt in partes_resp or [] if pt.text and not getattr(pt, "thought", False))
+    if not texto:
+        raise ErroExplicacao("resposta sem texto")
+    try:
+        saida = json.loads(texto)
+    except json.JSONDecodeError as e:
+        raise ErroExplicacao(f"resposta não é JSON válido: {e}") from e
     ids = {c["id"] for c in saida["clientes"]}
     if ids != set(fatos.nomes):
         raise ErroExplicacao(f"clientes na resposta ({sorted(ids)}) diferem da carteira ({sorted(fatos.nomes)})")

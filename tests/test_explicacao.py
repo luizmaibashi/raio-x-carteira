@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from raio_x.explicacao import ErroExplicacao, gerar, montar_fatos, verificar
+from raio_x.explicacao import ESQUEMA, ErroExplicacao, gerar, montar_fatos, verificar
 from raio_x.modelo import Cliente, aliquota_t
 
 CARTEIRA = [Cliente("Indústria Alfa (sintético)", D(120_000), True), Cliente("Loja Gama (sintético)", D(45_000), False),
@@ -17,16 +17,19 @@ def _fatos(r=0):
 
 
 class Falso:
-    """Imita client.beta.messages.create devolvendo respostas prontas, em ordem."""
+    """Imita genai.Client().models.generate_content devolvendo respostas prontas, em ordem."""
 
-    def __init__(self, *saidas, stop="end_turn"):
-        self.saidas, self.pedidos, self.stop = list(saidas), [], stop
-        self.beta = SimpleNamespace(messages=SimpleNamespace(create=self._create))
+    def __init__(self, *saidas, fim="STOP", bloqueio=None):
+        self.saidas, self.pedidos, self.fim, self.bloqueio = list(saidas), [], fim, bloqueio
+        self.models = SimpleNamespace(generate_content=self._gerar)
 
-    def _create(self, **kw):
+    def _gerar(self, **kw):
         self.pedidos.append(kw)
         texto = json.dumps(self.saidas.pop(0), ensure_ascii=False)
-        return SimpleNamespace(stop_reason=self.stop, content=[SimpleNamespace(type="text", text=texto)])
+        cand = SimpleNamespace(finish_reason=self.fim,
+                               content=SimpleNamespace(parts=[SimpleNamespace(text=texto, thought=None)]))
+        return SimpleNamespace(prompt_feedback=SimpleNamespace(block_reason=self.bloqueio),
+                               candidates=[] if self.bloqueio else [cand])
 
 
 def _saida(fatos, resumo):
@@ -60,8 +63,9 @@ def test_gera_e_devolve_quando_numeros_conferem():
     out = gerar(falso, f)
     assert out["resumo"].startswith("O Simples puro")
     pedido = falso.pedidos[0]
-    assert pedido["model"] == "claude-opus-5-5" and pedido["fallbacks"] == "default"
-    assert pedido["output_config"]["format"]["type"] == "json_schema"
+    assert pedido["model"] == "gemini-3.8-flash"
+    assert pedido["config"].response_mime_type == "application/json"
+    assert pedido["config"].response_json_schema == ESQUEMA
 
 
 def test_tenta_de_novo_apontando_o_numero_inventado_e_depois_desiste():
@@ -69,7 +73,7 @@ def test_tenta_de_novo_apontando_o_numero_inventado_e_depois_desiste():
     falso = Falso(_saida(f, "Você perderia 37% da margem."), _saida(f, "Ainda 37%."))
     with pytest.raises(ErroExplicacao, match="37"):
         gerar(falso, f)
-    assert "37" in falso.pedidos[1]["messages"][-1]["content"]
+    assert "37" in falso.pedidos[1]["contents"][0].parts[-1].text
 
 
 def test_segunda_tentativa_corrigida_passa():
@@ -78,10 +82,14 @@ def test_segunda_tentativa_corrigida_passa():
     assert gerar(falso, f)["resumo"] == "Fique no Simples puro."
 
 
-def test_recusa_e_clientes_trocados_viram_erro():
+def test_recusa_bloqueio_corte_e_clientes_trocados_viram_erro():
     f = _fatos()
     with pytest.raises(ErroExplicacao, match="recusou"):
-        gerar(Falso(_saida(f, "x"), stop="refusal"), f)
+        gerar(Falso(_saida(f, "x"), fim="SAFETY"), f)
+    with pytest.raises(ErroExplicacao, match="recusou"):
+        gerar(Falso(_saida(f, "x"), bloqueio="PROHIBITED_CONTENT"), f)
+    with pytest.raises(ErroExplicacao, match="cortada"):
+        gerar(Falso(_saida(f, "x"), fim="MAX_TOKENS"), f)
     errado = {"resumo": "x", "clientes": [{"id": "C9", "argumento": "y"}]}
     with pytest.raises(ErroExplicacao, match="diferem"):
         gerar(Falso(errado), f)
@@ -108,7 +116,7 @@ def test_explicacoes_gravadas_conferem_com_o_calculo_atual():
 @pytest.mark.parametrize("perfil", ["Designer", "Consultora de TI", "Contador"])
 def test_tela_mostra_explicacao_gravada_do_perfil(perfil, monkeypatch):
     from streamlit.testing.v1 import AppTest
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     at = AppTest.from_file(str(ARQ.parent.parent / "app.py"), default_timeout=30).run()
     at.selectbox(key="perfil").set_value(perfil).run()
     assert not at.exception, at.exception

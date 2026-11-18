@@ -245,9 +245,9 @@ def _linha(df: pd.DataFrame, r_virada) -> alt.Chart:
 # ---------------------------------------------------------------- explicação por IA
 def _chave_api() -> str | None:
     try:
-        return st.secrets.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+        return st.secrets.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY")
     except Exception:   # sem secrets.toml o Streamlit levanta erro ao ler st.secrets
-        return os.environ.get("ANTHROPIC_API_KEY")
+        return os.environ.get("GEMINI_API_KEY")
 
 
 def _mostrar_explicacao(saida: dict, fatos, origem: str) -> None:
@@ -257,7 +257,7 @@ def _mostrar_explicacao(saida: dict, fatos, origem: str) -> None:
     with st.expander("Como conversar com cada cliente sobre preço"):
         for c in saida["clientes"]:
             st.markdown(f"**{fatos.nomes[c['id']]}** — {c['argumento']}")
-    st.caption(f"Texto escrito por IA (Claude) {origem}. Os {len(numeros(texto))} números citados foram conferidos "
+    st.caption(f"Texto escrito por IA (Gemini) {origem}. Os {len(numeros(texto))} números citados foram conferidos "
                "um a um contra o cálculo: texto com número que não existe no cálculo é descartado.")
 
 
@@ -281,11 +281,12 @@ def _explicacao_ia() -> None:
                    "preço mantido). Mude o perfil ou volte os controles para vê-la.")
         return
     if st.button("Escrever explicação com IA", icon=":material/edit_note:"):
-        import anthropic
+        from google import genai
+        from google.genai import errors
         with st.spinner("Escrevendo e conferindo os números…"):
             try:
-                gravadas[fatos.chave] = gerar(anthropic.Anthropic(api_key=chave), fatos)
-            except (ErroExplicacao, anthropic.APIError) as e:
+                gravadas[fatos.chave] = gerar(genai.Client(api_key=chave), fatos)
+            except (ErroExplicacao, errors.APIError) as e:
                 st.warning(f"Explicação descartada: {e}")
                 return
         _mostrar_explicacao(gravadas[fatos.chave], fatos, "nesta sessão")

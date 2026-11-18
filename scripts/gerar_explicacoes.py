@@ -3,7 +3,7 @@
 Assim a demo mostra a explicação sem chamar a API a cada visita. Cada texto gravado passou pelo verificador:
 todo número citado existe no cálculo (regra 1); o teste tests/test_explicacao.py confere de novo.
 
-Uso: ANTHROPIC_API_KEY=... python scripts/gerar_explicacoes.py
+Uso: GEMINI_API_KEY=... python scripts/gerar_explicacoes.py
 """
 import datetime as dt
 import json
@@ -12,7 +12,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
-import anthropic  # noqa: E402
+from google import genai  # noqa: E402
 
 from raio_x.entrada import ler_carteira_csv  # noqa: E402
 from raio_x.explicacao import MODELO, gerar, montar_fatos, numeros  # noqa: E402
@@ -32,7 +32,7 @@ def fatos_do_perfil(p: dict):
 def main() -> int:
     perfis = json.loads((EXEMPLOS / "perfis.json").read_text(encoding="utf-8"))
     gravadas = json.loads(SAIDA.read_text(encoding="utf-8")) if SAIDA.exists() else {}
-    cliente = anthropic.Anthropic()
+    cliente = genai.Client()   # lê GEMINI_API_KEY do ambiente
     for p in perfis:
         fatos = fatos_do_perfil(p)
         saida = gerar(cliente, fatos)
