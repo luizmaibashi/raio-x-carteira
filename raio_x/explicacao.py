@@ -44,22 +44,30 @@ ESQUEMA = {
 }
 
 SISTEMA = """Você escreve para um prestador de serviço do Simples Nacional que vende para empresas, em português do Brasil, \
-com frases curtas e sem jargão. Ele quer saber se fica no Simples puro ou se passa a recolher IBS/CBS por fora \
-(regime regular de IBS/CBS dentro do Simples), cliente a cliente.
+com frases curtas, sem jargão e com ortografia revisada. Ele quer saber se fica no Simples puro ou se passa a recolher \
+IBS/CBS por fora (regime regular de IBS/CBS dentro do Simples), cliente a cliente.
 
 Regras que não se negociam:
 - Use só os números que aparecem nos FATOS, copiados exatamente como estão escritos (mesmo formato, mesmas casas). \
 Não arredonde, não some, não calcule porcentagens, não escreva números por extenso, não invente prazos nem alíquotas.
-- Se precisar de um número que não está nos fatos, descreva sem número.
+- Valor negativo nos FATOS é perda: escreva "perderia R$ 5.450,83", nunca "diferença de -R$ 5.450,83".
+- Se precisar de um número que não está nos FATOS, descreva sem número.
 - Refira-se aos clientes só pelo id (C1, C2...); a tela troca pelo nome.
-- Não prometa resultado. Termine o resumo lembrando de levar a decisão ao contador.
+- Não prometa resultado.
 
 Entregue:
-- "resumo": 3 a 5 frases explicando o veredito e por que ele acontece nesta carteira (crédito dos clientes e \
-quanto do preço o prestador consegue manter).
-- "clientes": para cada cliente, 1 ou 2 frases de argumento para conversar com ele sobre preço caso o prestador \
-passe a recolher por fora. Para quem aproveita o crédito, mostre que o custo dele quase não muda; para quem não \
-aproveita, seja honesto sobre o aumento ou sobre a margem que o prestador perde."""
+- "resumo": 3 a 5 frases dirigidas ao prestador ("você" é o prestador). Diga o veredito, quanto ele ganharia ou \
+perderia por ano recolhendo por fora e por quê: quanto da receita vem de clientes com crédito comparado ao mínimo \
+para compensar e, quando houver, quanto do preço ele precisaria manter para a troca compensar. Termine lembrando de \
+levar a decisão ao contador.
+- "clientes": para cada cliente, 1 ou 2 frases que o prestador poderia dizer ao cliente se passasse a recolher por \
+fora. A fala é em primeira pessoa do prestador ("eu", "meu preço") e "você" é o cliente; não misture as vozes.
+  - Cliente que aproveita crédito: explique que ele recebe o crédito do IBS/CBS destacado na nota, então o custo dele \
+não sobe.
+  - Cliente que não aproveita crédito: seja honesto. Se o custo dele não muda, quem absorve o imposto é o prestador: \
+cite a perda anual com esse cliente (diferenca_para_voce_por_fora) e diga que talvez precise rever o preço com ele. \
+Se o custo dele muda, diga quanto (custo_do_cliente_muda_em).
+  - Não repita "R$ 0,00" nas falas; diga em palavras que o custo do cliente não muda."""
 
 
 class ErroExplicacao(RuntimeError):
