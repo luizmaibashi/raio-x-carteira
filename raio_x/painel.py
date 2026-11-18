@@ -5,7 +5,9 @@ informado pelo usuário, e a tela diz isso.
 """
 from __future__ import annotations
 
-from decimal import Decimal
+import json
+from decimal import ROUND_HALF_UP, Decimal
+from pathlib import Path
 
 from raio_x.modelo import Cliente, ResultadoCarteira, aliquota_t, avaliar_carteira
 
@@ -63,3 +65,23 @@ def brl(v) -> str:
 
 def pct(v, casas: int = 2) -> str:
     return f"{float(v) * 100:.{casas}f}%".replace(".", ",")
+
+
+def ler_conferencia(caminho: Path) -> dict | None:
+    """Conferência gravada por scripts/gravar_conferencia.py (respostas do motor da Receita, com data)."""
+    try:
+        return json.loads(caminho.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def caso_conferido(doc: dict | None, das) -> dict | None:
+    """Caso gravado com os mesmos pCBSSN/pIBSSN deste DAS (4 casas, como o motor lê).
+
+    O valor do motor só depende dos percentuais e da base, então percentuais iguais = mesma conferência.
+    """
+    if not doc:
+        return None
+    q = Decimal("0.0001")
+    alvo = (das.p_cbs_sn.quantize(q, ROUND_HALF_UP), das.p_ibs_sn.quantize(q, ROUND_HALF_UP))
+    return next((c for c in doc["casos"] if (Decimal(c["p_cbs_sn"]), Decimal(c["p_ibs_sn"])) == alvo), None)

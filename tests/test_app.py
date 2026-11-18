@@ -59,3 +59,29 @@ def test_tela_muda_parametros_sem_erro():
     next(s for s in at.slider if s.label.startswith("Quanto do seu preço")).set_value(50).run()
     at.number_input[0].set_value(0.0).run()   # folha 0 -> Anexo V, ainda dentro do escopo
     assert not at.exception
+
+
+def test_conferencia_gravada_bate_com_o_modulo_das_atual():
+    """Se a tabela do Simples ou o DAS mudar, a conferência gravada fica velha: regrave com o motor no ar."""
+    from decimal import ROUND_HALF_UP
+    from raio_x.das import calcular
+    from raio_x.painel import caso_conferido, ler_conferencia
+    doc = ler_conferencia(Path(APP).parent / "dados" / "conferencia_receita.json")
+    assert doc and doc["casos"] and all(c["confere"] for c in doc["casos"])
+    q = D("0.0001")
+    for c in doc["casos"]:
+        das = calcular(c["rbt12"], c["folha12"], c["ano"])
+        assert (das.p_cbs_sn.quantize(q, ROUND_HALF_UP), das.p_ibs_sn.quantize(q, ROUND_HALF_UP)) == \
+            (D(c["p_cbs_sn"]), D(c["p_ibs_sn"]))
+        assert caso_conferido(doc, das) is not None
+    assert ler_conferencia(Path("/nao/existe.json")) is None and caso_conferido(None, das) is None
+
+
+def test_aviso_de_prazo_em_2027():
+    import datetime as dt
+    at = _app().run()
+    avisos = [w.value for w in at.warning]
+    if dt.date.today() <= dt.date(2026, 12, 20):
+        assert any("20/12/2026" in w for w in avisos)
+    else:
+        assert not any("20/12/2026" in w for w in avisos)

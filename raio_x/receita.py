@@ -92,6 +92,17 @@ class Conferencia:
     divergencias: tuple[str, ...]
 
 
+def no_ar(url: str = URL_SIMPLES, timeout: float = 1) -> bool:
+    """O motor responde? Qualquer resposta HTTP conta (a raiz devolve 404)."""
+    try:
+        urllib.request.urlopen(url.rstrip("/") + "/", timeout=timeout)
+        return True
+    except urllib.error.HTTPError:
+        return True
+    except Exception:
+        return False
+
+
 class ClienteReceita:
     def __init__(self, url_regular: str = URL_REGULAR, url_simples: str = URL_SIMPLES, timeout: float = 10):
         self.url_regular, self.url_simples, self.timeout = url_regular.rstrip("/"), url_simples.rstrip("/"), timeout

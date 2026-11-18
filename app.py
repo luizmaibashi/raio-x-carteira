@@ -1,6 +1,7 @@
 """Raio-X da Carteira — tela (Streamlit). Rode: streamlit run app.py"""
 from __future__ import annotations
 
+import datetime as dt
 import io
 from decimal import Decimal
 from pathlib import Path
@@ -13,11 +14,14 @@ from raio_x.das import ForaDoEscopo, calcular
 from raio_x.entrada import TOMADORES_CREDITO, ErroEntrada, ler_carteira_csv, ler_linhas_csv
 from raio_x.modelo import avaliar_carteira, linha_do_tempo, poder_de_preco_indiferenca
 from raio_x.nfse import ErroNFSe, ler_notas
-from raio_x.painel import ANOS, DIFERENCA, brl, pct, sensibilidade_r, t_por_ano, tabela_clientes
+from raio_x.painel import ANOS, DIFERENCA, brl, caso_conferido, ler_conferencia, pct, sensibilidade_r, t_por_ano, tabela_clientes
 
 RAIZ = Path(__file__).resolve().parent
 EXEMPLO_CSV = RAIZ / "dados" / "exemplos" / "carteira_exemplo.csv"
 EXEMPLO_XML = RAIZ / "dados" / "exemplos" / "nfse"
+CONFERENCIA = RAIZ / "dados" / "conferencia_receita.json"
+# P03: quem optou por IBS/CBS por fora no 1º semestre de 2027 pode cancelar até 20/12/2026.
+PRAZO_CANCELAMENTO = dt.date(2026, 12, 20)
 OPCOES_TOMADOR = list(TOMADORES_CREDITO)
 ROTULOS_TOMADOR = {"regular": "regular (empresa no regime regular)", "simples_h": "simples_h (Simples com IBS/CBS por fora)",
                    "simples": "simples (Simples puro)", "pf": "pf (pessoa física)", "isento": "isento"}
@@ -119,7 +123,7 @@ editada = area_carteira.data_editor(
     st.session_state.carteira, num_rows="dynamic", width="stretch", hide_index=True,
     column_config={
         "cliente": st.column_config.TextColumn("Cliente", required=True),
-        "valor_12m": st.column_config.NumberColumn("Faturado em 12 meses (R$)", min_value=0.0, format="%.2f",
+        "valor_12m": st.column_config.NumberColumn("Faturado em 12 meses (R$)", min_value=0.0, format="localized",
                                                    required=True),
         "tomador": st.column_config.SelectboxColumn("Regime do cliente", options=OPCOES_TOMADOR, required=True,
                                                     help="; ".join(ROTULOS_TOMADOR.values())),
@@ -134,7 +138,7 @@ faltando = editada[editada["tomador"].isna() | (editada["tomador"].astype(str).s
 if not faltando.empty:
     _topo("Raio-X da Carteira", "Falta um dado para o raio-X.", SOBRE)
     area_resultado.warning("Informe o regime de: " + ", ".join(faltando["cliente"].astype(str)) +
-                           ", na tabela **Sua carteira**, logo abaixo. A nota fiscal não diz se o cliente "
+                           ", na coluna **Regime do cliente** da tabela **Sua carteira**, logo abaixo. A nota fiscal não diz se o cliente "
                            "toma crédito; o protótipo não chuta.")
     st.stop()
 
@@ -180,13 +184,22 @@ def _zero() -> alt.Chart:
 
 def _barras(df: pd.DataFrame, cat: str, val: str, horizontal: bool = False) -> alt.Chart:
     d = df[[cat, val]].rename(columns={cat: "c", val: "v"})
+    d["rotulo"] = [brl(v) for v in d["v"]]
     eixo_v = alt.Axis(title="Diferença para você (R$)", labelExpr=EIXO_BRL)
     dica = [alt.Tooltip("c:N", title=cat), alt.Tooltip("v:Q", title=val, format=",.2f")]
     if horizontal:
         enc = dict(y=alt.Y("c:N", sort=None, title=None, axis=alt.Axis(labelLimit=320, grid=False, minExtent=_largura_rotulos(d["c"]))),
-                   x=alt.X("v:Q", axis=eixo_v))
+                   x=alt.X("v:Q", axis=eixo_v, scale=alt.Scale(padding=90)))
         altura, zero = 40 + 34 * len(d), _zero().encode(x="z:Q")
         barra = alt.Chart(d).mark_bar(size=18, cornerRadiusEnd=4)
+        # Valor escrito na ponta de cada barra: o ganho pequeno dos clientes com crédito é o achado, não um defeito.
+        texto = dict(y=enc["y"], x="v:Q", text="rotulo:N")
+        rotulos = (alt.Chart(d).transform_filter("datum.v >= 0").mark_text(align="left", dx=6, fontSize=12, fontWeight=500, color=NEUTRO)
+                   .encode(**texto)
+                   + alt.Chart(d).transform_filter("datum.v < 0").mark_text(align="right", dx=-6, fontSize=12, fontWeight=500, color=NEUTRO)
+                   .encode(**texto))
+        return _estilo((barra.encode(color=COR_SINAL, tooltip=dica, **enc) + rotulos + zero)
+                       .properties(height=altura))
     else:
         enc = dict(x=alt.X("c:N", sort=None, title=None, axis=alt.Axis(labelAngle=0, grid=False)),
                    y=alt.Y("v:Q", axis=eixo_v))
@@ -256,13 +269,27 @@ with area_resultado:
                 help="Menor parte do preço de hoje que você precisa manter para recolher por fora empatar com o "
                      "Simples puro, nesta carteira e neste ano. \"Nenhum\": nem mantendo 100% compensa.")
 
+    if ano == 2027 and dt.date.today() <= PRAZO_CANCELAMENTO:   # P03
+        if ganho < 0:
+            st.warning("**Prazo: 20/12/2026.** Se você já optou por recolher IBS/CBS por fora no 1º semestre de "
+                       "2027, ainda dá para cancelar a opção. Com estes números, o Simples puro deixa mais "
+                       "dinheiro com você: leve isso ao seu contador antes do prazo.", icon=":material/event:")
+        else:
+            st.info("**Prazos:** a opção por recolher por fora no 1º semestre de 2027 encerrou em 30/10/2026 e "
+                    "pode ser cancelada até 20/12/2026; a próxima janela de opção abre em março de 2027.",
+                    icon=":material/event:")
+
     _secao(st, "Cliente a cliente",
            f"Azul: recolher por fora te rende dinheiro nesse cliente. Vermelho: te custa, mantendo {r_pct} do preço.")
     tab = pd.DataFrame(tabela_clientes(res, cred))
     st.altair_chart(_barras(tab, "Cliente", DIFERENCA, horizontal=True), width="stretch")
-    dinheiro = {c: st.column_config.NumberColumn(c, format="R$ %.2f") for c in tab.columns if c not in
-                ("Cliente", "Toma crédito")}
-    st.dataframe(tab, hide_index=True, width="stretch", column_config=dinheiro)
+    # Formato brasileiro pelo Styler: a tela mostra o texto formatado e a ordenação usa o número.
+    dinheiro = [c for c in tab.columns if c not in ("Cliente", "Aproveita crédito")]
+    principais = ["Cliente", "Aproveita crédito", "Preço hoje", DIFERENCA]
+    st.dataframe(tab[principais].style.format(brl, subset=["Preço hoje", DIFERENCA]),
+                 hide_index=True, width="stretch")
+    with st.expander("Ver todas as colunas"):
+        st.dataframe(tab.style.format(brl, subset=dinheiro), hide_index=True, width="stretch")
 
     c1, c2 = st.columns(2, gap="large")
     with c1:
@@ -295,24 +322,55 @@ with st.expander("Como calculamos"):
         f"- **IBS/CBS por fora em {ano}:** {pct(t)}{' com redução de 30%' if reducao else ''}, {oficial} (P13).\n"
         f"- **Premissas usadas:** {', '.join(das.premissas)}, P01, P13, P17. Nenhum número vem de IA.")
 
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def _motor_no_ar() -> bool:
+    from raio_x.receita import no_ar
+    return no_ar()
+
+
 with st.expander("Conferir no motor oficial da Receita"):
-    st.caption("Envia pCBSSN e pIBSSN à calculadora do Simples da Receita (rodando localmente) e compara com o "
-               "cálculo próprio, numa nota de R$ 10.000.")
-    if st.button("Conferir"):
-        from raio_x.receita import ClienteReceita, ErroReceita
-        try:
-            conf = ClienteReceita(timeout=5).conferir_das(das, f"{ano}-03-10", 10_000)
-            if conf.ok:
-                st.success(f"Confere: CBS {brl(conf.motor.v_cbs_sn)} e IBS {brl(conf.motor.v_ibs_sn)} no motor da Receita.")
+    if _motor_no_ar():
+        st.caption("Envia os percentuais de CBS e IBS do DAS à calculadora do Simples da Receita (rodando "
+                   "localmente) e compara com o cálculo próprio, numa nota de R$ 10.000.")
+        if st.button("Conferir"):
+            from raio_x.receita import ClienteReceita, ErroReceita
+            try:
+                conf = ClienteReceita(timeout=5).conferir_das(das, f"{ano}-03-10", 10_000)
+                if conf.ok:
+                    st.success(f"Confere: CBS {brl(conf.motor.v_cbs_sn)} e IBS {brl(conf.motor.v_ibs_sn)} "
+                               "no motor da Receita.")
+                else:
+                    st.error("Divergência: " + "; ".join(conf.divergencias))
+            except ErroReceita as e:
+                st.warning(str(e))
+    else:
+        doc = ler_conferencia(CONFERENCIA)
+        if doc is None:
+            st.caption("O motor da Receita não está no ar aqui e não há conferência gravada.")
+        else:
+            casos = doc["casos"]
+            quando = dt.datetime.fromisoformat(doc["gravado_em"]).strftime("%d/%m/%Y")
+            st.caption(f"O motor da Receita não roda nesta hospedagem. Conferência gravada em {quando}: "
+                       f"{sum(c['confere'] for c in casos)} de {len(casos)} casos conferem, numa nota de R$ 10.000.")
+            caso = caso_conferido(doc, das)
+            if caso is None:
+                st.info("Os percentuais do DAS desta carteira não estão entre os casos gravados.")
+            elif caso["confere"]:
+                st.success(f"Esta carteira está entre eles: CBS {brl(caso['motor_v_cbs_sn'])} e IBS "
+                           f"{brl(caso['motor_v_ibs_sn'])} no motor, iguais ao cálculo próprio.")
             else:
-                st.error("Divergência: " + "; ".join(conf.divergencias))
-        except ErroReceita as e:
-            st.warning(str(e))
+                st.error("Divergência gravada: " + "; ".join(caso["divergencias"]))
+            st.dataframe(pd.DataFrame([{
+                "Ano": c["ano"], "Receita 12 meses": brl(c["rbt12"]), "Anexo": c["anexo"], "Faixa": c["faixa"],
+                "CBS motor": brl(c["motor_v_cbs_sn"]), "CBS próprio": brl(c["proprio_v_cbs_sn"]),
+                "IBS motor": brl(c["motor_v_ibs_sn"]), "IBS próprio": brl(c["proprio_v_ibs_sn"]),
+                "Confere": "sim" if c["confere"] else "não"} for c in casos]), hide_index=True, width="stretch")
 
 with st.expander("O que o protótipo não calcula"):
     st.markdown(
         "- Efeito de caixa do split payment e do prazo de recebimento (P07, P08).\n"
         "- Imposto de renda do sócio e pró-labore.\n"
         "- Mudança de faixa do Simples causada pelo novo preço em H.\n"
-        "- RBT12 acima de R$ 3,6 milhões, mais de uma atividade, tomador no exterior: erro explícito.\n"
-        "- Prazo: quem optou por H no 1º semestre de 2027 pode cancelar até 20/12/2026 (P03).")
+        "- RBT12 acima de R$ 3,6 milhões, mais de uma atividade, tomador no exterior: erro explícito.")
