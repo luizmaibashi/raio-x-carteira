@@ -221,6 +221,16 @@ def _largura_rotulos(rotulos) -> int:
     return min(320, 12 + 7 * max((len(str(x)) for x in rotulos), default=0))
 
 
+# Tela estreita (celular): o Vega lê a largura do contêiner na hora de desenhar. Com nomes longos e a margem fixa de
+# 90 px de cada lado, sobrava menos espaço que as duas margens e a escala invertia (barras negativas para a direita).
+ESTREITO = "containerSize()[0] < 500"
+NOMES_ESTREITO = 110   # px; nome mais longo que isso sai com reticências
+
+
+def _expr(estreito, largo) -> alt.ExprRef:
+    return alt.ExprRef(f"{ESTREITO} ? {estreito} : {largo}")
+
+
 def _zero() -> alt.Chart:
     return alt.Chart(pd.DataFrame({"z": [0]})).mark_rule(color=NEUTRO, strokeWidth=1)
 
@@ -231,8 +241,14 @@ def _barras(df: pd.DataFrame, cat: str, val: str, horizontal: bool = False) -> a
     eixo_v = alt.Axis(title="Diferença para você (R$)", labelExpr=EIXO_BRL)
     dica = [alt.Tooltip("c:N", title=cat), alt.Tooltip("v:Q", title=val, format=",.2f")]
     if horizontal:
-        enc = dict(y=alt.Y("c:N", sort=None, title=None, axis=alt.Axis(labelLimit=320, grid=False, minExtent=_largura_rotulos(d["c"]))),
-                   x=alt.X("v:Q", axis=eixo_v, scale=alt.Scale(padding=90)))
+        reserva = _largura_rotulos(d["c"])
+        enc = dict(y=alt.Y("c:N", sort=None, title=None, axis=alt.Axis(
+                       labelLimit=_expr(NOMES_ESTREITO, 320), grid=False,
+                       minExtent=_expr(min(reserva, NOMES_ESTREITO), reserva))),
+                   # Margem que cabe o valor escrito na ponta da barra ("-R$ 3.640,95"), sem passar do gráfico.
+                   x=alt.X("v:Q", axis=alt.Axis(title="Diferença para você (R$)", labelExpr=EIXO_BRL,
+                                                tickCount=_expr(3, 8)),
+                           scale=alt.Scale(padding=_expr(88, 90), nice=False)))
         altura, zero = 40 + 34 * len(d), _zero().encode(x="z:Q")
         barra = alt.Chart(d).mark_bar(size=18, cornerRadiusEnd=4)
         # Valor escrito na ponta de cada barra: o ganho pequeno dos clientes com crédito é o achado, não um defeito.
