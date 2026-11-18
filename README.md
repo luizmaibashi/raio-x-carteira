@@ -8,6 +8,8 @@ Os cálculos de IBS/CBS usam as calculadoras de código aberto da Receita Federa
 
 > Em construção. Simulação educativa: não substitui a análise de um contador.
 
+**Demo:** https://raio-x-carteira.streamlit.app (dados sintéticos; na nuvem, a conferência com a Receita é a gravada em `dados/conferencia_receita.json`).
+
 ## Rodar
 
 ```bash
@@ -26,7 +28,7 @@ A tela abre com uma carteira sintética de exemplo (CSV) e notas sintéticas de 
 | `raio_x/das.py` | Fator R, faixa, alíquota efetiva do DAS, partilha de CBS/IBS e teto de 5% do ISS |
 | `raio_x/modelo.py` | Compara Simples puro (S) e IBS/CBS por fora (H), cliente a cliente, com poder de preço `r` |
 | `raio_x/entrada.py`, `raio_x/nfse.py` | Carteira em CSV ou a partir dos XMLs de NFS-e (CPF descartado na leitura) |
-| `raio_x/receita.py` | Confere o cálculo no motor oficial da Receita, rodando como serviço separado |
+| `raio_x/receita.py`, `scripts/gravar_conferencia.py` | Confere o cálculo no motor oficial da Receita, rodando como serviço separado, e grava a conferência para a demo |
 | `app.py` | Tela em Streamlit |
 
 Nenhum número sai de LLM: todo valor vem de código determinístico ou do motor da Receita, e cada regra cita a premissa que a sustenta.
