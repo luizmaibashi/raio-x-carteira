@@ -1,0 +1,27 @@
+# Mantém a demo pública acordada: o Streamlit Community Cloud hiberna apps sem tráfego por 12 horas.
+# Só abre a página num navegador sem tela (e clica em acordar, se preciso); não faz commit.
+name: Manter demo acordada
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"   # a cada 6 horas, fora do minuto cheio (horário UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  acordar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Instalar navegador
+        run: |
+          pip install playwright==1.65.2
+          python -m playwright install --with-deps chromium
+      - name: Abrir a demo
+        run: python scripts/acordar_demo.py https://raio-x-carteira.streamlit.app
