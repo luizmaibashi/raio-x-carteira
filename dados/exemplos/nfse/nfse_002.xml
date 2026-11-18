@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infNFSe Id="NFS-SINT-002"><DPS versao="1.01"><infDPS><dhEmi>2026-05-10T09:00:00-03:00</dhEmi><toma><CNPJ>11111111000100</CNPJ><xNome>Indústria Alfa (sintético)</xNome></toma><valores><vServPrest><vServ>10000.00</vServ></vServPrest></valores></infDPS></DPS></infNFSe></NFSe>

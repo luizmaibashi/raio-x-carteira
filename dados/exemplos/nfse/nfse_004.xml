@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infNFSe Id="NFS-SINT-004"><DPS versao="1.01"><infDPS><dhEmi>2026-07-01T09:00:00-03:00</dhEmi><toma><CPF>12345678900</CPF></toma><valores><vServPrest><vServ>1500.00</vServ></vServPrest></valores></infDPS></DPS></infNFSe></NFSe>

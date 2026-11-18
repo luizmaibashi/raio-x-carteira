@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<NFSe xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01"><infNFSe Id="NFS-SINT-003"><DPS versao="1.01"><infDPS><dhEmi>2026-06-15T09:00:00-03:00</dhEmi><toma><CNPJ>22222222000100</CNPJ><xNome>Comércio Beta (sintético)</xNome></toma><valores><vServPrest><vServ>6000.00</vServ></vServPrest><vDescCondIncond><vDescIncond>500.00</vDescIncond></vDescCondIncond></valores></infDPS></DPS></infNFSe></NFSe>
