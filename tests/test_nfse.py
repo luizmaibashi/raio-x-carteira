@@ -31,7 +31,7 @@ def test_agrega_por_tomador_e_desconto_incondicional():
 def test_cpf_nao_sai_da_leitura():
     r = ler_notas(arq(
         nota("N1", "2026-03-01T10:00:00-03:00", "200.00", cpf=CPF, nome="Fulano"),
-        nota("N2", "2026-03-02T10:00:00-03:00", "100.00", cpf="98765432100", nome="Beltrano"),
+        nota("N2", "2026-03-02T10:00:00-03:00", "100.00", cpf="98765432111", nome="Beltrano"),
     ))
     assert [(t.rotulo, t.tipo, t.valor) for t in r.tomadores] == [(ROTULO_PF, "pf", D("300.00"))]
     texto = para_csv(r) + repr(r)

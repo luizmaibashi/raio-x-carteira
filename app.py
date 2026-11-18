@@ -145,11 +145,11 @@ with st.sidebar:
     reducao = st.checkbox("Profissão regulamentada com redução de 30% (ex.: economista, contador)", key="reducao")
     prazo = st.number_input("Prazo médio para receber dos clientes (dias)", min_value=0, max_value=365, step=5,
                             key="prazo", help="Só entra nos pontos de atenção: o cálculo não mede efeito no caixa.")
-    k = st.number_input("Créditos de IBS/CBS das suas compras em H, 12 meses (R$)", min_value=0.0, value=0.0,
+    k = st.number_input("Créditos de IBS/CBS das suas compras se recolher por fora, 12 meses (R$)", min_value=0.0, value=0.0,
                         step=100.0, format="%.2f")
 
     st.header("3. Cenário")
-    t33 = st.slider("CBS + IBS em 2033 (cenário, %)", 20.0, 32.0, 27.0, 0.5, format="%.1f%%",
+    t33 = st.slider("CBS + IBS em 2033 (cenário, %)", 20, 32, 27, 1, format="%d%%",
                     help="Não há alíquota oficial de IBS ainda. O modelo usa estimativas de 26% a 28%. "
                          "Só 2027 (11,3%, TCU) é referência oficial.") / 100
 
@@ -299,6 +299,10 @@ def _explicacao_ia() -> None:
     arquivo = ler_conferencia(EXPLICACOES) or {}   # mesmo leitor de JSON da conferência
     if fatos.chave in arquivo:
         g = arquivo[fatos.chave]
+        from raio_x.explicacao import verificar
+        if verificar(g["resumo"] + " " + " ".join(c["argumento"] for c in g["clientes"]), fatos):   # regra 1
+            st.caption("A explicação gravada citou número que não está no cálculo atual e foi descartada.")
+            return
         quando = dt.datetime.fromisoformat(g["gerado_em"]).strftime("%d/%m/%Y")
         _mostrar_explicacao(g, fatos, f"e gravado em {quando}")
         return
@@ -425,7 +429,7 @@ with st.expander("Como calculamos"):
         "(você mantém o preço de hoje).\n"
         f"- **DAS desta carteira:** Anexo {das.anexo} (Fator R {pct(das.fator_r, 1)}), {das.faixa}ª faixa, "
         f"alíquota efetiva {pct(res.a)}; IBS/CBS dentro do DAS {pct(res.c, 3)}"
-        + (" ; teto de 5% do ISS aplicado (P16)" if das.teto_iss_aplicado else "") + ".\n"
+        + ("; teto de 5% do ISS aplicado (P16)" if das.teto_iss_aplicado else "") + ".\n"
         f"- **IBS/CBS por fora em {ano}:** {pct(t)}{' com redução de 30%' if reducao else ''}, {oficial} (P13).\n"
         f"- **Premissas usadas:** {', '.join(das.premissas)}, P01, P13, P17. Nenhum número vem de IA.")
 
@@ -479,5 +483,5 @@ with st.expander("O que o protótipo não calcula"):
     st.markdown(
         "- Efeito de caixa do split payment e do prazo de recebimento (P07, P08).\n"
         "- Imposto de renda do sócio e pró-labore.\n"
-        "- Mudança de faixa do Simples causada pelo novo preço em H.\n"
+        "- Mudança de faixa do Simples causada pelo novo preço quando se recolhe por fora.\n"
         "- RBT12 acima de R$ 3,6 milhões, mais de uma atividade, tomador no exterior: erro explícito.")

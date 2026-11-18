@@ -17,7 +17,7 @@ NOTAS = [
     dict(dh="2026-06-15T09:00:00-03:00", vserv="6000.00", cnpj="22222222000100", nome="Comércio Beta (sintético)",
          desc_incond="500.00"),
     dict(dh="2026-07-01T09:00:00-03:00", vserv="1500.00", cpf="12345678900", nome="Pessoa física (sintético)"),
-    dict(dh="2026-08-01T09:00:00-03:00", vserv="1200.00", cpf="98765432100", nome="Pessoa física (sintético)"),
+    dict(dh="2026-08-01T09:00:00-03:00", vserv="1200.00", cpf="98765432111", nome="Pessoa física (sintético)"),
 ]
 
 if __name__ == "__main__":

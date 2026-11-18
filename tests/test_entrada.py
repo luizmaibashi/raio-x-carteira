@@ -42,7 +42,7 @@ def test_separador_virgula_e_ordem_de_colunas():
     ("cliente;valor_12m;tomador\nA;0;pf\n", "positivo"),
     ("cliente;valor_12m;tomador\nA;1;pf\nA;2;pf\n", "repetido"),
     ("cliente;valor_12m;tomador\nA;1\n", "colunas"),
-    ("cliente;valor_12m;tomador\n123.456.789-09;1;pf\n", "CPF/CNPJ"),
+    ("cliente;valor_12m;tomador\n123.456.789-00;1;pf\n", "CPF/CNPJ"),
     ("cliente;valor_12m;tomador\nEmpresa 12345678000199;1;regular\n", "CPF/CNPJ"),
 ])
 def test_erros_explicitos(texto, trecho):

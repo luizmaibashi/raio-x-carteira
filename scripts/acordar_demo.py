@@ -13,18 +13,25 @@ from playwright.sync_api import TimeoutError as Esgotou
 from playwright.sync_api import sync_playwright
 
 URL = sys.argv[1] if len(sys.argv) > 1 else "https://raio-x-carteira.streamlit.app"
-MARCA = "Sua empresa"   # texto da barra lateral do app (innerText sai com a caixa da tela, então nada de título)
+# Textos que só aparecem com o app inteiro de pé: barra lateral, a seção que vem depois dos pontos de atenção e o
+# rodapé "Como calculamos". (innerText sai com a caixa da tela, então nada de título em maiúsculas.)
+MARCAS = ("Sua empresa", "Cliente a cliente", "Como calculamos")
+ERROS = ("This app has encountered an error", "Traceback")
 
 
 def _app_carregou(pagina, espera_ms: int) -> bool:
-    """O app roda num iframe de outro endereço (/~/+/); procura a marca em todos os frames, a cada 5 s."""
+    """O app roda num iframe de outro endereço (/~/+/). Falha se a página mostra erro ou se falta alguma marca."""
     for _ in range(espera_ms // 5000):
         for frame in pagina.frames:
             try:
-                if MARCA in frame.locator("body").inner_text(timeout=2000):
-                    return True
+                texto = frame.locator("body").inner_text(timeout=2000)
             except Exception:   # frame ainda carregando ou já descartado
-                pass
+                continue
+            if any(e in texto for e in ERROS):
+                print("o app abriu com erro na página", flush=True)
+                return False
+            if all(m in texto for m in MARCAS):
+                return True
         pagina.wait_for_timeout(5000)
     return False
 
@@ -43,7 +50,7 @@ def main() -> int:
             print("não estava dormindo", flush=True)
         ok = _app_carregou(pagina, 300_000)
         nav.close()
-    print("app no ar" if ok else "app não carregou em 5 minutos")
+    print("app no ar, inteiro" if ok else "app com erro ou incompleto")
     return 0 if ok else 1
 
 

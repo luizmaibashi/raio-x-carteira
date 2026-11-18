@@ -1,6 +1,6 @@
 [
   {"id": "designer", "nome": "Designer", "arquivo": "carteira_exemplo.csv", "folha12": 90000, "reducao_30": false, "prazo_dias": 30,
-   "resumo": "Atende empresas do regime regular, do Simples e pessoas físicas. Folha de 30% da receita (Anexo III)."},
+   "resumo": "Atende empresas do regime regular, do Simples e pessoas físicas. Design está sujeito ao Fator R (P23); com folha de 30% da receita, cai no Anexo III."},
   {"id": "consultora_ti", "nome": "Consultora de TI", "arquivo": "perfis/consultora_ti.csv", "folha12": 126000, "reducao_30": false, "prazo_dias": 60,
    "resumo": "Só atende empresas grandes, todas no regime regular, que aproveitam o crédito de IBS/CBS."},
   {"id": "contador", "nome": "Contador", "arquivo": "perfis/contador.csv", "folha12": 90000, "reducao_30": true, "prazo_dias": 30,

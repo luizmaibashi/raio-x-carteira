@@ -38,11 +38,11 @@ Protótipo para o Hack Brasil 2026: mostra a prestadores de serviço do Simples 
 
 ## Ordem de trabalho
 
-1. Gerador das tabelas do Simples + módulo DAS, com testes.
-2. Modelo econômico S × H (bloqueado até a alíquota de referência de 2027 estar confirmada).
-3. Cliente HTTP das APIs da Receita.
-4. Entrada de dados (formato ainda em aberto).
-5. Classificação assistida por LLM com avaliação; regras de lacuna; explicação.
-6. Interface, hospedagem, vídeo.
+1. Gerador das tabelas do Simples + módulo DAS, com testes. **Feito.**
+2. Modelo econômico S × H (CBS 2027 = 11,3%, P13). **Feito.**
+3. Cliente HTTP das APIs da Receita, com conferência gravada para a nuvem. **Feito.**
+4. Entrada de dados: CSV e XML de NFS-e (leiaute nacional 1.01). **Feito.**
+5. Pontos de atenção por regra e explicação por LLM com números conferidos. **Feito.** A classificação de serviço (NBS) por LLM ficou fora do protótipo (decisão de 18/11/2026).
+6. Interface e hospedagem (**feitas**); vídeo.
 
 Teste antes de commit: `pytest` precisa passar.

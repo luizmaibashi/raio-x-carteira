@@ -14,7 +14,7 @@ from pathlib import Path
 
 ARQUIVO_ANEXOS = Path(__file__).resolve().parent.parent / "dados" / "anexos_simples.json"
 
-FATOR_R_MINIMO = Decimal("0.28")          # P12: atividade 09 sujeita ao Fator R; >= 28% -> Anexo III
+FATOR_R_MINIMO = Decimal("0.28")          # P23: §5º-I/§5º-J da LC 123, >= 28% -> Anexo III (P12)
 TETO_ESCOPO_RBT12 = Decimal("3600000")    # Desenho, passo 6: 6ª faixa (sublimite) fora do protótipo
 ANOS = range(2027, 2034)                  # P01/P18: tabelas de 2027 a 2033
 TOLERANCIA_PGDAS = Decimal("0.01")        # Desenho, passo 8: diferença > 0,01 p.p. vira alerta
@@ -79,7 +79,7 @@ def fator_r(rbt12, folha12) -> Decimal:
 
 
 def anexo_por_fator_r(fr: Decimal) -> str:
-    """P12: Fator R >= 28% -> Anexo III; abaixo -> Anexo V (fronteira inclusiva)."""
+    """P23 (LC 123 art. 18 §5º-J): Fator R >= 28% -> Anexo III; abaixo -> Anexo V (fronteira inclusiva)."""
     return "III" if fr >= FATOR_R_MINIMO else "V"
 
 

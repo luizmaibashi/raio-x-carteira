@@ -41,9 +41,9 @@ A carteira entra de três formas: exemplo pronto, CSV ou os XMLs das notas fisca
 1. **Nenhum número sai de LLM.** Alíquota, imposto e resultado vêm de código determinístico. A IA só escreve texto: recebe os números já calculados, com os clientes trocados por C1, C2…, e [um verificador](raio_x/explicacao.py) confere cada número citado. Texto com número que não existe no cálculo é descartado.
 2. **Tabelas da lei geradas por script.** [`scripts/gerar_anexos.py`](scripts/gerar_anexos.py) lê os Anexos III e V do Simples Nacional no texto oficial publicado pelo Senado e grava URL, data e SHA-256 da fonte. O gerador falha se uma linha da partilha não somar 100%.
 3. **Conferência com o motor oficial.** O cálculo é conferido nas [calculadoras de código aberto da Receita Federal](https://github.com/ReceitaFederal) (licença MIT), que rodam como serviço separado: 19 de 19 casos conferem. Na nuvem, a tela mostra essa conferência gravada.
-4. **Toda regra cita uma premissa** (P01 a P22), com fonte legal, data de consulta e grau de certeza.
+4. **Toda regra cita uma premissa** (P01 a P23), com fonte legal, data de consulta e grau de certeza.
 5. **Fora do escopo dá erro, não número aproximado.** Exemplo: receita acima de R$ 3,6 milhões.
-6. **119 testes automatizados**, incluindo testes da tela.
+6. **120 testes automatizados**, incluindo testes da tela.
 
 ## Arquitetura
 
@@ -56,7 +56,8 @@ A carteira entra de três formas: exemplo pronto, CSV ou os XMLs das notas fisca
 | `raio_x/explicacao.py` | Fatos para a IA (Gemini), verificador de números, duas tentativas e depois descarta |
 | `raio_x/entrada.py`, `raio_x/nfse.py` | Carteira por CSV ou XML de NFS-e |
 | `raio_x/receita.py`, `scripts/gravar_conferencia.py` | Cliente HTTP do motor da Receita e conferência gravada |
-| `app.py` | Tela em Streamlit |
+| `app.py`, `raio_x/painel.py` | Tela em Streamlit; formatação em real e por cento, cenários de alíquota e sensibilidade |
+| `scripts/gerar_exemplos_nfse.py`, `scripts/validar_nfse_xsd.py` | XMLs sintéticos de exemplo e validação contra o XSD oficial (esta precisa de `pip install xmlschema`, fora do `requirements.txt`) |
 | `.github/workflows/manter_demo.yml` | Mantém a demo acordada no Streamlit Community Cloud |
 
 Python 3.12, Streamlit, Altair, `google-genai`. Os textos da IA para os perfis de exemplo ficam gravados em `dados/explicacoes_ia.json` (o original da IA e a revisão humana), e a demo pública não chama a API.
@@ -76,7 +77,8 @@ Os testes de integração com as calculadoras da Receita (portas 8080 e 8082) s�
 
 - A faixa do Simples não é recalculada quando o preço muda com o recolhimento por fora.
 - O efeito no caixa do split payment e do prazo de recebimento aparece como alerta, não como número.
-- Alíquotas de 2028 em diante são cenário, porque ainda não há alíquota oficial de IBS.
+- A CBS de 2027 (11,3%) é o cálculo do TCU homologado em 28/10/2026; o Senado pode fixar outro valor até 15/12/2026. Alíquotas de 2028 em diante são cenário, porque ainda não há alíquota oficial de IBS.
+- O verificador da IA confere se cada número citado existe no cálculo, não o sentido da frase. Por isso os textos dos perfis de exemplo também foram revisados à mão.
 - Cláusula de repasse e elegibilidade à redução de 30% (registro em conselho) aparecem como alerta: a tela não lê contratos nem consulta conselhos. Falta a revisão de um contador.
 
 ## Licença
