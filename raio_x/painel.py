@@ -13,6 +13,8 @@ from raio_x.modelo import Cliente, ResultadoCarteira, aliquota_t, avaliar_cartei
 FRACAO_IBS = {2027: Decimal(0), 2028: Decimal(0), 2029: Decimal("0.1"), 2030: Decimal("0.2"),
               2031: Decimal("0.3"), 2032: Decimal("0.4"), 2033: Decimal(1)}
 ANOS = tuple(FRACAO_IBS)
+# Por fora (H) menos Simples puro (S), do ponto de vista do prestador.
+DIFERENCA = "Diferença para você"
 
 
 def t_por_ano(t_2033, reducao_30: bool) -> dict[int, Decimal]:
@@ -32,15 +34,15 @@ def tabela_clientes(res: ResultadoCarteira, cred: dict[str, bool]) -> list[dict]
     for nome, x in res.clientes.items():
         linhas.append({
             "Cliente": nome,
-            "Toma crédito": "sim" if cred[nome] else "não",
-            "Preço hoje (S)": float(x.preco_s),
-            "Preço-base em H": float(x.preco_h),
-            "Você fica com (S)": float(x.prestador_s),
-            "Você fica com (H)": float(x.prestador_h),
-            "H − S para você": float(x.ganho_prestador),
-            "Custo do cliente: H − S": float(x.variacao_custo_cliente),
+            "Aproveita crédito": "sim" if cred[nome] else "não",
+            "Preço hoje": float(x.preco_s),
+            "Preço por fora (sem o imposto)": float(x.preco_h),
+            "Fica com você no Simples puro": float(x.prestador_s),
+            "Fica com você por fora": float(x.prestador_h),
+            DIFERENCA: float(x.ganho_prestador),
+            "Custo do cliente muda": float(x.variacao_custo_cliente),
         })
-    return sorted(linhas, key=lambda l: l["H − S para você"])
+    return sorted(linhas, key=lambda l: l[DIFERENCA])
 
 
 def sensibilidade_r(clientes: list[Cliente], folha12, ano: int, t, k=0, passos: int = 10) -> list[dict]:
@@ -48,7 +50,7 @@ def sensibilidade_r(clientes: list[Cliente], folha12, ano: int, t, k=0, passos: 
     for i in range(passos + 1):
         r = Decimal(i) / passos
         res = avaliar_carteira(clientes, folha12, ano, t, r, k)
-        out.append({"r": float(r), "H − S para você": float(res.prestador_h - res.prestador_s)})
+        out.append({"r": float(r), DIFERENCA: float(res.prestador_h - res.prestador_s)})
     return out
 
 

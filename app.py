@@ -11,9 +11,9 @@ import streamlit as st
 
 from raio_x.das import ForaDoEscopo, calcular
 from raio_x.entrada import TOMADORES_CREDITO, ErroEntrada, ler_carteira_csv, ler_linhas_csv
-from raio_x.modelo import avaliar_carteira, linha_do_tempo
+from raio_x.modelo import avaliar_carteira, linha_do_tempo, poder_de_preco_indiferenca
 from raio_x.nfse import ErroNFSe, ler_notas
-from raio_x.painel import ANOS, brl, pct, sensibilidade_r, t_por_ano, tabela_clientes
+from raio_x.painel import ANOS, DIFERENCA, brl, pct, sensibilidade_r, t_por_ano, tabela_clientes
 
 RAIZ = Path(__file__).resolve().parent
 EXEMPLO_CSV = RAIZ / "dados" / "exemplos" / "carteira_exemplo.csv"
@@ -26,11 +26,11 @@ st.set_page_config(page_title="Raio-X da Carteira", page_icon=":material/receipt
 st.markdown(f"<style>{(RAIZ / 'raio_x' / 'estilo.css').read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 
 SOBRE = ("Reforma tributária para prestador de serviço do Simples Nacional que vende para empresas: "
-         "cliente a cliente, vale ficar no Simples puro (S) ou recolher IBS/CBS por fora (H)?")
+         "cliente a cliente, vale ficar no Simples puro ou recolher IBS/CBS por fora?")
 AVISO = "Protótipo do Hack Brasil 2026, só com dados sintéticos. Não é consultoria tributária."
 
-# Ordem na página: topo com o veredito, resultado, e só depois a carteira editável.
-topo, area_resultado, area_carteira = st.container(), st.container(), st.container()
+# Ordem na página: veredito, os dois controles que mais mexem nele, resultado e só depois a carteira editável.
+topo, area_controles, area_resultado, area_carteira = (st.container() for _ in range(4))
 
 
 def _topo(olho: str, veredito: str, apoio: str, nota: str = AVISO) -> None:
@@ -97,18 +97,22 @@ with st.sidebar:
     st.header("2. Sua empresa")
     folha = st.number_input("Folha + pró-labore + encargos, 12 meses (R$)", min_value=0.0, value=90_000.0,
                             step=1_000.0, format="%.2f")
-    ano = st.selectbox("Ano", ANOS, index=0)
     reducao = st.checkbox("Profissão regulamentada com redução de 30% (ex.: economista, contador)", value=False)
     k = st.number_input("Créditos de IBS/CBS das suas compras em H, 12 meses (R$)", min_value=0.0, value=0.0,
                         step=100.0, format="%.2f")
 
     st.header("3. Cenário")
-    r = st.slider("Seu poder de preço (r)", 0.0, 1.0, 0.0, 0.05,
-                  help="0 = o cliente dita o preço e fica indiferente entre S e H; "
-                       "1 = você mantém o preço-base e o cliente absorve a mudança.")
-    t33 = st.slider("CBS + IBS em 2033 (cenário)", 0.20, 0.32, 0.27, 0.005, format="%.3f",
+    t33 = st.slider("CBS + IBS em 2033 (cenário, %)", 20.0, 32.0, 27.0, 0.5, format="%.1f%%",
                     help="Não há alíquota oficial de IBS ainda. O modelo usa estimativas de 26% a 28%. "
-                         "Só 2027 (11,3%, TCU) é referência oficial.")
+                         "Só 2027 (11,3%, TCU) é referência oficial.") / 100
+
+# Os dois controles que mais mudam a resposta ficam junto do veredito (no celular a barra lateral começa fechada).
+c_r, c_ano = area_controles.columns([3, 1], gap="large")
+r = c_r.slider("Quanto do seu preço você consegue manter se recolher por fora?", 0, 100, 0, 5, format="%d%%",
+               help="0%: você baixa o preço até o cliente pagar o mesmo de antes (ele dita o preço). "
+                    "100%: você mantém o preço de hoje e o imposto vai por cima; o cliente absorve a diferença. "
+                    "No modelo, é o poder de preço r.") / 100
+ano = c_ano.selectbox("Ano", ANOS, index=0)
 
 _secao(area_carteira, "Sua carteira", st.session_state.resumo or "Escolha uma entrada na barra lateral.")
 editada = area_carteira.data_editor(
@@ -130,7 +134,8 @@ faltando = editada[editada["tomador"].isna() | (editada["tomador"].astype(str).s
 if not faltando.empty:
     _topo("Raio-X da Carteira", "Falta um dado para o raio-X.", SOBRE)
     area_resultado.warning("Informe o regime de: " + ", ".join(faltando["cliente"].astype(str)) +
-               ". A nota fiscal não diz se o cliente toma crédito; o protótipo não chuta.")
+                           ", na tabela **Sua carteira**, logo abaixo. A nota fiscal não diz se o cliente "
+                           "toma crédito; o protótipo não chuta.")
     st.stop()
 
 try:
@@ -175,7 +180,7 @@ def _zero() -> alt.Chart:
 
 def _barras(df: pd.DataFrame, cat: str, val: str, horizontal: bool = False) -> alt.Chart:
     d = df[[cat, val]].rename(columns={cat: "c", val: "v"})
-    eixo_v = alt.Axis(title="H − S para você (R$)", labelExpr=EIXO_BRL)
+    eixo_v = alt.Axis(title="Diferença para você (R$)", labelExpr=EIXO_BRL)
     dica = [alt.Tooltip("c:N", title=cat), alt.Tooltip("v:Q", title=val, format=",.2f")]
     if horizontal:
         enc = dict(y=alt.Y("c:N", sort=None, title=None, axis=alt.Axis(labelLimit=320, grid=False, minExtent=_largura_rotulos(d["c"]))),
@@ -190,16 +195,21 @@ def _barras(df: pd.DataFrame, cat: str, val: str, horizontal: bool = False) -> a
     return _estilo((barra.encode(color=COR_SINAL, tooltip=dica, **enc) + zero).properties(height=altura))
 
 
-def _linha(df: pd.DataFrame) -> alt.Chart:
-    d = df.rename(columns={"H − S para você": "v"})
+def _linha(df: pd.DataFrame, r_virada) -> alt.Chart:
+    d = df.rename(columns={DIFERENCA: "v"})
     base = alt.Chart(d).encode(
-        x=alt.X("r:Q", title="Poder de preço (r)", scale=alt.Scale(domain=[0, 1])),
-        y=alt.Y("v:Q", axis=alt.Axis(title="H − S para você (R$)", labelExpr=EIXO_BRL)))
-    return _estilo((base.mark_line(color=NEUTRO, strokeWidth=2)
-                    + base.mark_point(filled=True, size=70, opacity=1).encode(
-                        color=COR_SINAL, tooltip=[alt.Tooltip("r:Q", format=".2f"),
-                                                  alt.Tooltip("v:Q", title="H − S", format=",.2f")])
-                    + _zero().encode(y="z:Q")).properties(height=280))
+        x=alt.X("r:Q", title="Quanto do preço você mantém", scale=alt.Scale(domain=[0, 1]),
+                axis=alt.Axis(format="%")),
+        y=alt.Y("v:Q", axis=alt.Axis(title="Diferença para você (R$)", labelExpr=EIXO_BRL)))
+    camadas = (base.mark_line(color=NEUTRO, strokeWidth=2)
+               + base.mark_point(filled=True, size=70, opacity=1).encode(
+                   color=COR_SINAL, tooltip=[alt.Tooltip("r:Q", title="Preço mantido", format=".0%"),
+                                             alt.Tooltip("v:Q", title=DIFERENCA, format=",.2f")])
+               + _zero().encode(y="z:Q"))
+    if r_virada is not None:   # onde a decisão troca de lado (cálculo exato, modelo.poder_de_preco_indiferenca)
+        camadas += alt.Chart(pd.DataFrame({"x": [float(r_virada)]})).mark_rule(
+            color=NEUTRO, strokeDash=[4, 4]).encode(x="x:Q")
+    return _estilo(camadas.properties(height=280))
 
 
 # ---------------------------------------------------------------- resultado
@@ -207,6 +217,10 @@ ganho = res.prestador_h - res.prestador_s
 s = res.indiferenca_peso_com_credito
 oficial = "referência oficial (TCU)" if ano == 2027 else "cenário, não alíquota oficial"
 nb = lambda v: brl(v).replace(" ", "\u00a0")   # "R$" não quebra longe do número
+r_pct = pct(r, 0)
+r_virada = poder_de_preco_indiferenca(clientes, folha, ano, t, k)
+sens = pd.DataFrame(sensibilidade_r(clientes, folha, ano, t, k))
+ja_compensa = sens[DIFERENCA].iloc[0] >= 0   # H já vence S mantendo 0% do preço
 if ganho > 0:
     veredito = f'Recolher IBS/CBS por fora rende <span class="rx-ganha">{nb(ganho)}</span> a mais por ano.'
 elif ganho < 0:
@@ -215,54 +229,71 @@ elif ganho < 0:
 else:
     veredito = "Simples puro e IBS/CBS por fora empatam nessa carteira."
 if s is None:
-    frase = ("Com esse poder de preço, H " + ("ganha" if ganho > 0 else "perde") +
-             " de S em qualquer composição de carteira.")
+    frase = (f"Mantendo {r_pct} do preço, recolher por fora " + ("ganha" if ganho > 0 else "perde") +
+             " do Simples puro em qualquer composição de carteira.")
 else:
-    r_br = f"{r:.2f}".replace(".", ",")
-    frase = (f"Com r = {r_br}, H só compensa se pelo menos <b>{pct(s, 1)}</b> da sua receita vier de clientes "
-             f"que tomam crédito. Hoje são <b>{pct(1 - res.peso_sem_credito, 1)}</b>.")
+    frase = (f"Mantendo {r_pct} do preço, recolher por fora só compensa se pelo menos <b>{pct(s, 1)}</b> da sua "
+             f"receita vier de clientes que aproveitam o crédito. Hoje são <b>{pct(1 - res.peso_sem_credito, 1)}</b>.")
+if ganho < 0 and r_virada is not None:
+    frase += f" Com a sua carteira, você precisaria manter pelo menos <b>{pct(r_virada, 0)}</b> do preço."
 _topo(f"Raio-X da Carteira · {len(clientes)} clientes · {ano}", veredito, frase,
       f"CBS + IBS por fora (t) {pct(t)}, {oficial}. {AVISO}")
 
 with area_resultado:
     m = st.columns(4)
-    m[0].metric("Fica com você em S", brl(res.prestador_s), border=True,
-                help="Quanto sobra para você em 12 meses, depois do imposto.")
-    m[1].metric("Fica com você em H", brl(res.prestador_h), delta=brl(ganho), border=True)
-    m[2].metric("Receita sem crédito", pct(res.peso_sem_credito, 1), border=True)
-    m[3].metric("Melhor regime para você", res.melhor, border=True,
-                help="S = Simples puro (IBS/CBS dentro do DAS); H = IBS/CBS recolhidos por fora.")
-    st.caption(f"DAS: Anexo {das.anexo} (Fator R {pct(das.fator_r, 1)}), {das.faixa}ª faixa, alíquota efetiva "
-               f"{pct(res.a)}; CBS + IBS dentro do DAS (c) {pct(res.c, 3)}. "
-               f"CBS + IBS por fora (t) {pct(t)}{' com redução de 30%' if reducao else ''}. "
-               f"Premissas: {', '.join(das.premissas)}, P13, P17."
-               + (" 5ª faixa com teto de 5% do ISS aplicado (P16)." if das.teto_iss_aplicado else ""))
+    m[0].metric("No Simples puro", brl(res.prestador_s), border=True,
+                help="Quanto fica com você em 12 meses, depois do DAS.")
+    m[1].metric("Recolhendo por fora", brl(res.prestador_h), delta=brl(ganho), border=True,
+                delta_color="blue" if ganho > 0 else ("red" if ganho < 0 else "off"),   # mesma polaridade dos gráficos
+                help="Quanto fica com você em 12 meses recolhendo IBS/CBS por fora do DAS, com o preço que você "
+                     "consegue manter.")
+    m[2].metric("Receita com crédito", pct(1 - res.peso_sem_credito, 1), border=True,
+                help="Parte da receita vinda de clientes que aproveitam o crédito de IBS/CBS (empresas do regime "
+                     "regular ou do Simples que recolhe por fora).")
+    m[3].metric("Preço a manter",
+                "já compensa" if ja_compensa else (pct(r_virada, 0) if r_virada is not None else "nenhum"),
+                border=True,
+                help="Menor parte do preço de hoje que você precisa manter para recolher por fora empatar com o "
+                     "Simples puro, nesta carteira e neste ano. \"Nenhum\": nem mantendo 100% compensa.")
 
     _secao(st, "Cliente a cliente",
-           "Azul: recolher por fora te rende dinheiro nesse cliente. Vermelho: te custa, com esse poder de preço.")
+           f"Azul: recolher por fora te rende dinheiro nesse cliente. Vermelho: te custa, mantendo {r_pct} do preço.")
     tab = pd.DataFrame(tabela_clientes(res, cred))
-    st.altair_chart(_barras(tab, "Cliente", "H − S para você", horizontal=True), width="stretch")
+    st.altair_chart(_barras(tab, "Cliente", DIFERENCA, horizontal=True), width="stretch")
     dinheiro = {c: st.column_config.NumberColumn(c, format="R$ %.2f") for c in tab.columns if c not in
                 ("Cliente", "Toma crédito")}
     st.dataframe(tab, hide_index=True, width="stretch", column_config=dinheiro)
 
     c1, c2 = st.columns(2, gap="large")
     with c1:
-        _secao(st, "E se você tiver mais poder de preço?",
-               "Diferença H − S na carteira, de r = 0 (cliente dita o preço) a r = 1 (você mantém o preço).")
-        sens = pd.DataFrame(sensibilidade_r(clientes, folha, ano, t, k))
-        st.altair_chart(_linha(sens), width="stretch")
+        _secao(st, "E se você conseguir manter mais do preço?",
+               "Diferença na carteira inteira, de 0% (o cliente dita o preço) a 100% (você mantém o preço de hoje)."
+               + (" A linha tracejada marca onde a decisão troca de lado." if r_virada is not None else ""))
+        st.altair_chart(_linha(sens, r_virada), width="stretch")
     with c2:
         try:
             anos_res, virada = linha_do_tempo(clientes, folha, ts, r, k)
             _secao(st, "Linha do tempo 2027–2033",
                    (f"A decisão troca de lado em {virada}. " if virada else "A decisão não troca de lado no período. ")
-                   + "De 2028 em diante t é cenário (IBS sobe 10/20/30/40% até 2033, P01).")
+                   + "De 2028 em diante a alíquota é cenário: o IBS sobe 10/20/30/40% até 2033.")
             lt = pd.DataFrame({"ano": [str(x.ano) for x in anos_res],
-                               "H − S para você": [float(x.prestador_h - x.prestador_s) for x in anos_res]})
-            st.altair_chart(_barras(lt, "ano", "H − S para você"), width="stretch")
+                               DIFERENCA: [float(x.prestador_h - x.prestador_s) for x in anos_res]})
+            st.altair_chart(_barras(lt, "ano", DIFERENCA), width="stretch")
         except ForaDoEscopo as e:
             st.error(str(e))
+
+with st.expander("Como calculamos"):
+    st.markdown(
+        "- **Simples puro (S):** IBS/CBS ficam dentro do DAS; o cliente só credita a fatia de IBS/CBS do DAS.\n"
+        "- **Por fora (H):** IBS/CBS saem do DAS e são recolhidos à alíquota cheia; o cliente do regime regular "
+        "credita tudo (P04, P05, P17).\n"
+        "- **Preço mantido (r):** de 0% (preço cai até o cliente pagar o mesmo que no Simples puro) a 100% "
+        "(você mantém o preço de hoje).\n"
+        f"- **DAS desta carteira:** Anexo {das.anexo} (Fator R {pct(das.fator_r, 1)}), {das.faixa}ª faixa, "
+        f"alíquota efetiva {pct(res.a)}; IBS/CBS dentro do DAS {pct(res.c, 3)}"
+        + (" ; teto de 5% do ISS aplicado (P16)" if das.teto_iss_aplicado else "") + ".\n"
+        f"- **IBS/CBS por fora em {ano}:** {pct(t)}{' com redução de 30%' if reducao else ''}, {oficial} (P13).\n"
+        f"- **Premissas usadas:** {', '.join(das.premissas)}, P01, P13, P17. Nenhum número vem de IA.")
 
 with st.expander("Conferir no motor oficial da Receita"):
     st.caption("Envia pCBSSN e pIBSSN à calculadora do Simples da Receita (rodando localmente) e compara com o "

@@ -5,7 +5,8 @@ import pytest
 
 from raio_x.das import ForaDoEscopo
 from raio_x.modelo import (Cliente, aliquota_t, avaliar_carteira, linha_do_tempo,
-                           peso_indiferenca, preco_equilibrio, resultado_cliente)
+                           peso_indiferenca, poder_de_preco_indiferenca, preco_equilibrio,
+                           resultado_cliente)
 
 A, C, T = D("0.0808"), D("0.013817"), D("0.113")
 
@@ -89,3 +90,16 @@ def test_linha_do_tempo_vira_quando_t_sobe():
     cart = [Cliente("x", D(270_000), True), Cliente("y", D(30_000), False)]
     res, virada = linha_do_tempo(cart, 90_000, {2027: "0.001", 2033: "0.28"}, 0)
     assert [x.melhor for x in res] == ["H", "S"] and virada == 2033
+
+
+def test_poder_de_preco_de_virada_zera_ganho():
+    r = poder_de_preco_indiferenca(CARTEIRA, 90_000, 2027, T)
+    assert r is not None and 0 < r < 1
+    res = avaliar_carteira(CARTEIRA, 90_000, 2027, T, r)
+    assert abs(res.prestador_h - res.prestador_s) < D("1e-15")
+
+
+def test_poder_de_preco_sem_virada():
+    # Só clientes com crédito: H já ganha com r = 0, não há preço a manter.
+    so_cred = [Cliente("x", D(300_000), True)]
+    assert poder_de_preco_indiferenca(so_cred, 90_000, 2027, T) is None

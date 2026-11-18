@@ -163,6 +163,21 @@ def avaliar_carteira(clientes: list[Cliente], folha12, ano: int, t, r, k=0) -> R
     )
 
 
+def poder_de_preco_indiferenca(clientes: list[Cliente], folha12, ano: int, t, k=0) -> Decimal | None:
+    """r em que H = S na carteira: a parcela do preço-base que o prestador precisa manter.
+
+    Q(r) é linear em r e o que fica com o prestador em H é linear em Q, então H − S na carteira
+    é G(r) = G(0) + r·(G(1) − G(0)) e o ponto de virada é exato: r* = −G(0) / (G(1) − G(0)).
+    Devolve None se H ganha já com r = 0 ou não alcança S nem com r = 1 (sem chute, regra 4).
+    """
+    g0, g1 = (avaliar_carteira(clientes, folha12, ano, t, r, k) for r in (0, 1))
+    d0, d1 = g0.prestador_h - g0.prestador_s, g1.prestador_h - g1.prestador_s
+    if d0 >= 0 or d1 <= d0:
+        return None
+    r = -d0 / (d1 - d0)
+    return r if r <= 1 else None
+
+
 def linha_do_tempo(clientes: list[Cliente], folha12, t_por_ano: dict[int, object], r, k=0):
     """Avalia cada ano informado; devolve resultados e o primeiro ano em que a decisão troca."""
     anos = sorted(t_por_ano)

@@ -33,7 +33,8 @@ def test_tela_abre_com_exemplo_e_veredito():
     at = _app().run()
     assert not at.exception, at.exception
     assert any("rx-veredito" in md.value and "R$" in md.value for md in at.markdown)
-    assert "Melhor regime para você" in [m.label for m in at.metric]
+    assert "Preço a manter" in [m.label for m in at.metric]
+    assert any("precisaria manter pelo menos" in md.value for md in at.markdown)
 
 
 def test_tela_com_exemplo_csv_mostra_resultado():
@@ -41,8 +42,8 @@ def test_tela_com_exemplo_csv_mostra_resultado():
     _botao(at, "Carteira (CSV)").click().run()
     assert not at.exception, at.exception
     rotulos = [m.label for m in at.metric]
-    assert "Melhor regime para você" in rotulos
-    assert any("H só compensa" in md.value for md in at.markdown)
+    assert "Preço a manter" in rotulos
+    assert any("só compensa" in md.value for md in at.markdown)
 
 
 def test_tela_com_xml_exige_regime_dos_pj():
@@ -55,6 +56,6 @@ def test_tela_com_xml_exige_regime_dos_pj():
 def test_tela_muda_parametros_sem_erro():
     at = _app().run()
     _botao(at, "Carteira (CSV)").click().run()
-    at.slider[0].set_value(0.5).run()
+    next(s for s in at.slider if s.label.startswith("Quanto do seu preço")).set_value(50).run()
     at.number_input[0].set_value(0.0).run()   # folha 0 -> Anexo V, ainda dentro do escopo
     assert not at.exception
