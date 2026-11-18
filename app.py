@@ -113,6 +113,7 @@ if "carteira" not in st.session_state:   # abre já com um perfil sintético: a 
 with st.sidebar:
     st.header("1. Sua carteira")
     fonte = st.radio("Como entrar com os clientes", ["Exemplo sintético", "CSV", "XMLs de NFS-e"], index=0)
+    erro_entrada, arquivo = None, "o arquivo"
     try:
         if fonte == "Exemplo sintético":
             st.selectbox("Perfil", list(PERFIS), key="perfil", on_change=_carregar_perfil,
@@ -127,6 +128,7 @@ with st.sidebar:
             st.caption("Colunas: `cliente;valor_12m;tomador`")
             up = st.file_uploader("Arquivo CSV", type=["csv"])
             if up is not None and st.session_state.get("_csv") != up.file_id:
+                arquivo = up.name
                 _carregar(_df_de_csv(up.getvalue().decode("utf-8-sig")), f"{up.name} carregado.")
                 st.session_state._csv = up.file_id
         else:
@@ -134,10 +136,14 @@ with st.sidebar:
                                    accept_multiple_files=True)
             chave = tuple(u.file_id for u in ups)
             if ups and st.session_state.get("_xml") != chave:
+                arquivo = "os XMLs" if len(ups) > 1 else ups[0].name
                 _carregar(*_df_de_xml([(u.name, u.getvalue()) for u in ups]))
                 st.session_state._xml = chave
     except (ErroEntrada, ErroNFSe) as e:
-        st.error(str(e))
+        # C11: arquivo recusado não troca a carteira, e o resultado da carteira anterior não fica na tela como se
+        # fosse deste arquivo. O erro aparece aqui e na área do resultado, e a página para depois da barra lateral.
+        erro_entrada = f"Não deu para ler {arquivo}: {e}"
+        st.error(erro_entrada)
 
     st.header("2. Sua empresa")
     folha = st.number_input("Folha + pró-labore + encargos, 12 meses (R$)", min_value=0.0, step=1_000.0,
@@ -152,6 +158,11 @@ with st.sidebar:
     t33 = st.slider("CBS + IBS em 2033 (cenário, %)", 20, 32, 27, 1, format="%d%%",
                     help="Não há alíquota oficial de IBS ainda. O modelo usa estimativas de 26% a 28%. "
                          "Só 2027 (11,3%, TCU) é referência oficial.") / 100
+
+if erro_entrada:
+    _topo("Raio-X da Carteira", "Não deu para ler esse arquivo.", SOBRE)
+    area_resultado.error(erro_entrada.rstrip(".") + ". Corrija o arquivo e envie de novo; nada foi calculado com ele.")
+    st.stop()
 
 # Os dois controles que mais mudam a resposta ficam junto do veredito (no celular a barra lateral começa fechada).
 c_r, c_ano = area_controles.columns([3, 1], gap="large")

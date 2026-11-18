@@ -53,6 +53,20 @@ def test_tela_com_xml_exige_regime_dos_pj():
     assert any("Informe o regime" in w.value for w in at.warning)
 
 
+def test_csv_invalido_nao_deixa_o_resultado_anterior_na_tela():
+    """C11: arquivo recusado para a tela; o veredito do arquivo anterior não pode continuar como se fosse dele."""
+    at = _app().run()
+    at.radio[0].set_value("CSV").run()
+    valido = (Path(APP).parent / "dados" / "exemplos" / "perfis" / "contador.csv").read_bytes()
+    at.file_uploader[0].set_value(("valido.csv", valido, "text/csv")).run()
+    assert "Preço a manter" in [m.label for m in at.metric]
+    at.file_uploader[0].set_value(("ruim.csv", b"cliente;valor_12m;tomador\nA;abc;regular\n", "text/csv")).run()
+    assert not at.exception, at.exception
+    assert any("linha 2" in e.value and "ruim.csv" in e.value for e in at.error)
+    assert not at.metric
+    assert not any("valido.csv carregado" in md.value for md in at.markdown)
+
+
 def test_tela_muda_parametros_sem_erro():
     at = _app().run()
     _botao(at, "Recarregar").click().run()
