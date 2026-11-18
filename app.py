@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime as dt
 import io
+import json
 from decimal import Decimal
 from pathlib import Path
 
@@ -17,7 +18,8 @@ from raio_x.nfse import ErroNFSe, ler_notas
 from raio_x.painel import ANOS, DIFERENCA, brl, caso_conferido, ler_conferencia, pct, sensibilidade_r, t_por_ano, tabela_clientes
 
 RAIZ = Path(__file__).resolve().parent
-EXEMPLO_CSV = RAIZ / "dados" / "exemplos" / "carteira_exemplo.csv"
+EXEMPLOS = RAIZ / "dados" / "exemplos"
+PERFIS = {p["nome"]: p for p in json.loads((EXEMPLOS / "perfis.json").read_text(encoding="utf-8"))}
 EXEMPLO_XML = RAIZ / "dados" / "exemplos" / "nfse"
 CONFERENCIA = RAIZ / "dados" / "conferencia_receita.json"
 # P03: quem optou por IBS/CBS por fora no 1º semestre de 2027 pode cancelar até 20/12/2026.
@@ -65,43 +67,56 @@ def _df_de_xml(arquivos) -> tuple[pd.DataFrame, str]:
     return df.sort_values("valor_12m", ascending=False, ignore_index=True), resumo
 
 
-if "carteira" not in st.session_state:   # abre já com o exemplo sintético: a tela nunca começa vazia
-    st.session_state.carteira = _df_de_csv(EXEMPLO_CSV.read_text(encoding="utf-8"))
-    st.session_state.resumo = "Carteira sintética de exemplo, 5 clientes. Edite à vontade."
+def _carregar(df: pd.DataFrame, resumo: str, perfil: str | None = None) -> None:
+    """Troca a carteira; a versão nova recria a tabela editável (edições da carteira anterior não vazam)."""
+    st.session_state.carteira, st.session_state.resumo, st.session_state.perfil_ativo = df, resumo, perfil
+    st.session_state.versao = st.session_state.get("versao", 0) + 1
+
+
+def _carregar_perfil() -> None:
+    p = PERFIS[st.session_state.perfil]
+    df = _df_de_csv((EXEMPLOS / p["arquivo"]).read_text(encoding="utf-8"))
+    _carregar(df, f"{p['resumo']} Carteira sintética de {len(df)} clientes; edite à vontade.", p["nome"])
+    st.session_state.folha, st.session_state.reducao = float(p["folha12"]), p["reducao_30"]
+
+
+if "carteira" not in st.session_state:   # abre já com um perfil sintético: a tela nunca começa vazia
+    st.session_state.perfil = next(iter(PERFIS))
+    _carregar_perfil()
 
 with st.sidebar:
     st.header("1. Sua carteira")
     fonte = st.radio("Como entrar com os clientes", ["Exemplo sintético", "CSV", "XMLs de NFS-e"], index=0)
     try:
         if fonte == "Exemplo sintético":
+            st.selectbox("Perfil", list(PERFIS), key="perfil", on_change=_carregar_perfil,
+                         help="Três prestadores sintéticos com respostas diferentes.")
             c1, c2 = st.columns(2)
-            if c1.button("Carteira (CSV)", width="stretch"):
-                st.session_state.carteira = _df_de_csv(EXEMPLO_CSV.read_text(encoding="utf-8"))
-                st.session_state.resumo = "Carteira sintética de 5 clientes."
+            if c1.button("Recarregar", width="stretch"):
+                _carregar_perfil()
             if c2.button("Notas (XML)", width="stretch"):
                 arqs = [(p.name, p.read_bytes()) for p in sorted(EXEMPLO_XML.glob("*.xml"))]
-                st.session_state.carteira, st.session_state.resumo = _df_de_xml(arqs)
+                _carregar(*_df_de_xml(arqs))
         elif fonte == "CSV":
             st.caption("Colunas: `cliente;valor_12m;tomador`")
             up = st.file_uploader("Arquivo CSV", type=["csv"])
             if up is not None and st.session_state.get("_csv") != up.file_id:
-                st.session_state.carteira = _df_de_csv(up.getvalue().decode("utf-8-sig"))
-                st.session_state.resumo, st.session_state._csv = f"{up.name} carregado.", up.file_id
+                _carregar(_df_de_csv(up.getvalue().decode("utf-8-sig")), f"{up.name} carregado.")
+                st.session_state._csv = up.file_id
         else:
             ups = st.file_uploader("XMLs das notas emitidas (padrão nacional)", type=["xml"],
                                    accept_multiple_files=True)
             chave = tuple(u.file_id for u in ups)
             if ups and st.session_state.get("_xml") != chave:
-                st.session_state.carteira, st.session_state.resumo = _df_de_xml(
-                    [(u.name, u.getvalue()) for u in ups])
+                _carregar(*_df_de_xml([(u.name, u.getvalue()) for u in ups]))
                 st.session_state._xml = chave
     except (ErroEntrada, ErroNFSe) as e:
         st.error(str(e))
 
     st.header("2. Sua empresa")
-    folha = st.number_input("Folha + pró-labore + encargos, 12 meses (R$)", min_value=0.0, value=90_000.0,
-                            step=1_000.0, format="%.2f")
-    reducao = st.checkbox("Profissão regulamentada com redução de 30% (ex.: economista, contador)", value=False)
+    folha = st.number_input("Folha + pró-labore + encargos, 12 meses (R$)", min_value=0.0, step=1_000.0,
+                            format="%.2f", key="folha")
+    reducao = st.checkbox("Profissão regulamentada com redução de 30% (ex.: economista, contador)", key="reducao")
     k = st.number_input("Créditos de IBS/CBS das suas compras em H, 12 meses (R$)", min_value=0.0, value=0.0,
                         step=100.0, format="%.2f")
 
@@ -127,7 +142,7 @@ editada = area_carteira.data_editor(
                                                    required=True),
         "tomador": st.column_config.SelectboxColumn("Regime do cliente", options=OPCOES_TOMADOR, required=True,
                                                     help="; ".join(ROTULOS_TOMADOR.values())),
-    }, key="editor")
+    }, key=f"editor_{st.session_state.versao}")
 
 if editada.empty:
     _topo("Raio-X da Carteira", "Quanto a reforma muda, cliente a cliente.", SOBRE)
@@ -249,7 +264,8 @@ else:
              f"receita vier de clientes que aproveitam o crédito. Hoje são <b>{pct(1 - res.peso_sem_credito, 1)}</b>.")
 if ganho < 0 and r_virada is not None:
     frase += f" Com a sua carteira, você precisaria manter pelo menos <b>{pct(r_virada, 0)}</b> do preço."
-_topo(f"Raio-X da Carteira · {len(clientes)} clientes · {ano}", veredito, frase,
+_topo(" · ".join(x for x in ("Raio-X da Carteira", st.session_state.get("perfil_ativo"),
+                                  f"{len(clientes)} clientes", str(ano)) if x), veredito, frase,
       f"CBS + IBS por fora (t) {pct(t)}, {oficial}. {AVISO}")
 
 with area_resultado:

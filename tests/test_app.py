@@ -32,14 +32,14 @@ def _app():
 def test_tela_abre_com_exemplo_e_veredito():
     at = _app().run()
     assert not at.exception, at.exception
-    assert any("rx-veredito" in md.value and "R$" in md.value for md in at.markdown)
+    assert any("class=\"rx-topo" in md.value and "R$" in md.value for md in at.markdown)
     assert "Preço a manter" in [m.label for m in at.metric]
     assert any("precisaria manter pelo menos" in md.value for md in at.markdown)
 
 
 def test_tela_com_exemplo_csv_mostra_resultado():
     at = _app().run()
-    _botao(at, "Carteira (CSV)").click().run()
+    _botao(at, "Recarregar").click().run()
     assert not at.exception, at.exception
     rotulos = [m.label for m in at.metric]
     assert "Preço a manter" in rotulos
@@ -55,7 +55,7 @@ def test_tela_com_xml_exige_regime_dos_pj():
 
 def test_tela_muda_parametros_sem_erro():
     at = _app().run()
-    _botao(at, "Carteira (CSV)").click().run()
+    _botao(at, "Recarregar").click().run()
     next(s for s in at.slider if s.label.startswith("Quanto do seu preço")).set_value(50).run()
     at.number_input[0].set_value(0.0).run()   # folha 0 -> Anexo V, ainda dentro do escopo
     assert not at.exception
@@ -85,3 +85,16 @@ def test_aviso_de_prazo_em_2027():
         assert any("20/12/2026" in w for w in avisos)
     else:
         assert not any("20/12/2026" in w for w in avisos)
+
+
+@pytest.mark.parametrize("perfil,melhor", [("Designer", "S"), ("Consultora de TI", "H"), ("Contador", "S")])
+def test_perfis_de_exemplo_dao_respostas_diferentes(perfil, melhor):
+    at = _app().run()
+    at.selectbox(key="perfil").set_value(perfil).run()
+    assert not at.exception, at.exception
+    topo = next(md.value for md in at.markdown if "class=\"rx-topo" in md.value)
+    assert perfil in topo
+    assert ("Recolher IBS/CBS por fora rende" in topo) == (melhor == "H")
+    if perfil == "Contador":   # apertado: com redução de 30%, mantendo pouco do preço já vira
+        assert at.checkbox(key="reducao").value is True
+        assert any(m.label == "Preço a manter" and m.value == "8%" for m in at.metric)
