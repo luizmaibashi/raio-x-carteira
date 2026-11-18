@@ -1,0 +1,42 @@
+# Tema da tela, claro e escuro (o visitante troca no menu ⋮ do canto superior direito).
+# Neutro quente + tinta; cor só nos dados (azul = H ganha, vermelho = H perde).
+# Direção: Taste Skill (tasteskill.dev): paleta quente sem violeta, raio "sharp" para fintech.
+# Azul/vermelho validados contra cada fundo pela skill dataviz (CVD e contraste ≥ 3:1).
+
+[client]
+# "viewer" mostra o menu com a escolha de tema, sem as opções de desenvolvedor.
+toolbarMode = "viewer"
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap, sans-serif"
+codeFont = "IBM Plex Mono:https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap, monospace"
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+baseRadius = "small"
+showWidgetBorder = true
+
+[theme.light]
+primaryColor = "#22211e"
+backgroundColor = "#f7f5f0"
+secondaryBackgroundColor = "#edeae2"
+textColor = "#1b1a17"
+borderColor = "#dcd7cb"
+blueColor = "#2a78d6"
+redColor = "#e34948"
+
+[theme.light.sidebar]
+backgroundColor = "#edeae2"
+
+[theme.dark]
+primaryColor = "#ecebe6"
+backgroundColor = "#1a1917"
+secondaryBackgroundColor = "#24231f"
+textColor = "#ecebe6"
+borderColor = "#3a3833"
+blueColor = "#3987e5"
+redColor = "#e66767"
+
+[theme.dark.sidebar]
+backgroundColor = "#21201c"

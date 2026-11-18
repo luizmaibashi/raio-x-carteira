@@ -1,0 +1,82 @@
+/* Estilo da tela.
+   Tokens de movimento: valores da escala pública do transitions.dev (Motion tokens),
+   digitados aqui; nenhum código da biblioteca foi copiado.
+   Direção visual: Taste Skill (tasteskill.dev): hierarquia à esquerda, título que diz algo,
+   entrada única no carregamento, nada de fade em cada seção. */
+:root {
+  --duration-stagger: 40ms;
+  --duration-micro: 80ms;
+  --duration-quick: 150ms;
+  --duration-fast: 250ms;
+  --duration-very-slow: 500ms;
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: ease-in-out;
+  --distance-medium: 12px;
+  --blur-medium: 3px;
+}
+
+/* Cores que seguem o tema escolhido no menu ⋮: o Streamlit marca o color-scheme da .stApp
+   como light ou dark, e light-dark() escolhe o valor certo. */
+.stApp {
+  --tinta: light-dark(#1b1a17, #ecebe6);
+  --tinta-2: light-dark(#52514e, #c3c2b7);
+  --tinta-3: light-dark(#77746c, #9a978d);
+  --linha: light-dark(#dcd7cb, #3a3833);
+  --cartao: light-dark(#fbfaf7, #201f1c);
+  --ganha: light-dark(#2a78d6, #3987e5);
+  --perde: light-dark(#e34948, #e66767);
+}
+
+/* Números alinhados em coluna em todo lugar. */
+.stApp { font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------- topo */
+.rx-topo { padding: 0.5rem 0 1.25rem; border-bottom: 1px solid var(--linha); margin-bottom: 0.5rem; }
+.rx-topo p.rx-olho {
+  font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--tinta-3); margin: 0 0 0.75rem;
+}
+.rx-topo p.rx-veredito {
+  font-size: clamp(1.7rem, 3.4vw, 2.75rem); line-height: 1.12; letter-spacing: -0.02em;
+  font-weight: 600; color: var(--tinta); max-width: 26ch; margin: 0 0 0.9rem;
+}
+.rx-veredito .rx-ganha { color: var(--ganha); }
+.rx-veredito .rx-perde { color: var(--perde); }
+.rx-topo p.rx-apoio { font-size: 1.05rem; line-height: 1.5; color: var(--tinta-2); max-width: 62ch; margin: 0; }
+.rx-apoio b { color: var(--tinta); font-weight: 600; }
+.rx-topo p.rx-nota { font-size: 0.82rem; color: var(--tinta-3); margin: 0.9rem 0 0; }
+
+/* Texts reveal (transitions.dev): linhas sobem com blur, em escada. Só na primeira carga. */
+@keyframes rx-sobe {
+  from { opacity: 0; transform: translateY(var(--distance-medium)); filter: blur(var(--blur-medium)); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+.rx-entra > * { animation: rx-sobe var(--duration-very-slow) var(--ease-smooth-out) both; }
+.rx-entra > *:nth-child(2) { animation-delay: calc(var(--duration-micro) * 1); }
+.rx-entra > *:nth-child(3) { animation-delay: calc(var(--duration-micro) * 2); }
+.rx-entra > *:nth-child(4) { animation-delay: calc(var(--duration-micro) * 3); }
+
+/* ---------------------------------------------------------------- seções */
+.rx-secao { margin: 2rem 0 0.25rem; }
+.rx-secao h3 { font-size: 1.15rem; font-weight: 600; letter-spacing: -0.01em; margin: 0; padding: 0; color: var(--tinta); }
+.rx-secao p.rx-sub { font-size: 0.9rem; color: var(--tinta-3); margin: 0.2rem 0 0; }
+
+/* Cartões de métrica: borda fina, sem sombra; valor grande e compacto. */
+[data-testid="stMetric"] { background: var(--cartao); }
+[data-testid="stMetricValue"] { font-size: 1.6rem; letter-spacing: -0.01em; }
+[data-testid="stMetricLabel"] p { color: var(--tinta-2); }
+
+/* Botões: sobem 1px no hover e afundam no clique (micro-interação curta). */
+.stButton > button, .stDownloadButton > button {
+  transition: transform var(--duration-quick) var(--ease-smooth-out),
+              background-color var(--duration-quick) var(--ease-smooth-out);
+}
+.stButton > button:hover { transform: translateY(-1px); }
+.stButton > button:active { transform: translateY(0) scale(0.98); transition-duration: var(--duration-micro); }
+
+/* Expansores sem caixa pesada. */
+[data-testid="stExpander"] details { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rx-entra > *, .stButton > button { animation: none !important; transition: none !important; }
+}
