@@ -50,3 +50,9 @@ def test_gate_aceita_so_excecao_conhecida():
     part = copy.deepcopy(part); part["2029"][0]["CBS"] = "15.61"
     with pytest.raises(GateError):
         gate("III", aliq, part)
+
+
+def test_tetos_do_iss_so_no_anexo_iii_ate_2032():
+    d = carregar_anexos()["anexos"]
+    assert set(d["III"]["teto_iss_5a_faixa"]) == set(PERIODOS[:-1])
+    assert d["V"]["teto_iss_5a_faixa"] == {}

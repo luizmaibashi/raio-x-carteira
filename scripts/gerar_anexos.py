@@ -31,6 +31,9 @@ TOL = Decimal("0.01")
 EXCECOES_CONHECIDAS = {("III", "2027-2028", 3), ("III", "2027-2028", 4)}
 # 6ª faixa: o texto traz só 4 valores; ISS e IBS saem do DAS acima de R$ 3,6 mi (P18).
 COLUNAS_6A_FAIXA = ["IRPJ", "CSLL", "CBS", "CPP"]
+# Nota (*) do teto do ISS: existe só no Anexo III, de 2027-28 a 2032 (P16). Lista fechada:
+# tabela ausente ou a mais falha o gate.
+TETOS_ESPERADOS = {"III": set(PERIODOS[:-1]), "V": set()}
 
 SAIDA = Path(__file__).resolve().parent.parent / "dados" / "anexos_simples.json"
 
@@ -189,6 +192,9 @@ def gerar(html_dir: Path | None) -> dict:
         texto = texto_limpo(bruto)
         aliq, part, tetos = extrair_aliquotas(texto), extrair_partilhas(texto), extrair_tetos(texto)
         avisos = gate(anexo, aliq, part)
+        if set(tetos) != TETOS_ESPERADOS[anexo]:
+            raise GateError(f"Anexo {anexo}: tabelas de teto do ISS {sorted(tetos)}, "
+                            f"esperado {sorted(TETOS_ESPERADOS[anexo])}")
         cab = RE_CAB_PART.search(texto)
         colunas = re.findall(r"[A-Z]{3,4}", cab.group(1))
         saida["anexos"][anexo] = {
