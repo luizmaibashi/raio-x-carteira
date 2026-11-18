@@ -13,6 +13,7 @@ import pandas as pd
 import streamlit as st
 
 from raio_x.das import ForaDoEscopo, calcular
+from raio_x import lacunas
 from raio_x.entrada import TOMADORES_CREDITO, ErroEntrada, ler_carteira_csv, ler_linhas_csv
 from raio_x.modelo import avaliar_carteira, linha_do_tempo, poder_de_preco_indiferenca
 from raio_x.nfse import ErroNFSe, ler_notas
@@ -80,6 +81,7 @@ def _carregar_perfil() -> None:
     df = _df_de_csv((EXEMPLOS / p["arquivo"]).read_text(encoding="utf-8"))
     _carregar(df, f"{p['resumo']} Carteira sintética de {len(df)} clientes; edite à vontade.", p["nome"])
     st.session_state.folha, st.session_state.reducao = float(p["folha12"]), p["reducao_30"]
+    st.session_state.prazo = int(p.get("prazo_dias", 30))
 
 
 if "carteira" not in st.session_state:   # abre já com um perfil sintético: a tela nunca começa vazia
@@ -119,6 +121,8 @@ with st.sidebar:
     folha = st.number_input("Folha + pró-labore + encargos, 12 meses (R$)", min_value=0.0, step=1_000.0,
                             format="%.2f", key="folha")
     reducao = st.checkbox("Profissão regulamentada com redução de 30% (ex.: economista, contador)", key="reducao")
+    prazo = st.number_input("Prazo médio para receber dos clientes (dias)", min_value=0, max_value=365, step=5,
+                            key="prazo", help="Só entra nos pontos de atenção: o cálculo não mede efeito no caixa.")
     k = st.number_input("Créditos de IBS/CBS das suas compras em H, 12 meses (R$)", min_value=0.0, value=0.0,
                         step=100.0, format="%.2f")
 
@@ -352,6 +356,12 @@ with area_resultado:
                     icon=":material/event:")
 
     _explicacao_ia()
+
+    achadas = lacunas.avaliar(clientes, folha, ano, t, r, k, prazo)   # P20, P21
+    if achadas:
+        _secao(st, "Pontos de atenção", "O que o cálculo acima não mede e pode mudar a sua decisão.")
+        for x in achadas:
+            st.info(f"**{x.titulo}.** {x.texto}", icon=":material/flag:")
 
     _secao(st, "Cliente a cliente",
            f"Azul: recolher por fora te rende dinheiro nesse cliente. Vermelho: te custa, mantendo {r_pct} do preço.")
