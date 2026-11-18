@@ -98,3 +98,27 @@ def test_perfis_de_exemplo_dao_respostas_diferentes(perfil, melhor):
     if perfil == "Contador":   # apertado: com redução de 30%, mantendo pouco do preço já vira
         assert at.checkbox(key="reducao").value is True
         assert any(m.label == "Preço a manter" and m.value == "8%" for m in at.metric)
+
+
+def test_app_recarrega_modulo_antigo_que_ficou_na_memoria():
+    """Simula o Streamlit Cloud com app.py novo e raio_x.lacunas antigo na memória (18/11/2026).
+
+    Roda em outro processo: o recarregamento troca as classes do pacote e atrapalharia os demais testes.
+    """
+    import subprocess
+    import sys
+    raiz = Path(__file__).resolve().parent.parent
+    roteiro = f"""
+import sys
+from streamlit.testing.v1 import AppTest
+at = AppTest.from_file({str(raiz / "app.py")!r}, default_timeout=30).run()
+lac = sys.modules["raio_x.lacunas"]
+lac.avaliar = lambda clientes, folha12, ano, t, r, k=0, prazo_dias=0: []   # assinatura velha
+lac._mtime_raiox = 0                                                       # arquivo mudou desde a carga
+at.run()
+assert not at.exception, at.exception
+assert any("Pontos de atenção" in m.value for m in at.markdown), "seção sumiu"
+print("ok")
+"""
+    r = subprocess.run([sys.executable, "-c", roteiro], cwd=raiz, capture_output=True, text=True, timeout=120)
+    assert r.returncode == 0 and r.stdout.strip().endswith("ok"), r.stderr[-2000:]

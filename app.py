@@ -12,7 +12,29 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from raio_x.das import ForaDoEscopo, calcular
+
+def _recarregar_raio_x() -> None:
+    """Recarrega o pacote raio_x se algum arquivo mudou desde que foi carregado.
+
+    O Streamlit Community Cloud reexecuta o app.py novo a cada push, mas pode manter na memória os módulos de
+    raio_x/ antigos (visto em 18/11/2026: app.py novo chamando lacunas.avaliar antigo -> TypeError). Módulo sem
+    a marca de carga também é recarregado, uma vez. A ordem respeita as dependências entre os módulos.
+    """
+    import importlib
+    import sys
+    ordem = ["raio_x.das", "raio_x.modelo", "raio_x.entrada", "raio_x.painel", "raio_x.nfse", "raio_x.receita",
+             "raio_x.lacunas", "raio_x.explicacao"]
+    carregados = [sys.modules[n] for n in ordem if n in sys.modules]
+    if not any(getattr(m, "_mtime_raiox", None) != os.path.getmtime(m.__file__) for m in carregados):
+        return
+    for m in carregados:
+        importlib.reload(m)
+        m._mtime_raiox = os.path.getmtime(m.__file__)
+
+
+_recarregar_raio_x()
+
+from raio_x.das import ForaDoEscopo, calcular  # noqa: E402
 from raio_x import lacunas
 from raio_x.entrada import TOMADORES_CREDITO, ErroEntrada, ler_carteira_csv, ler_linhas_csv
 from raio_x.modelo import avaliar_carteira, linha_do_tempo, poder_de_preco_indiferenca
