@@ -257,7 +257,8 @@ def _mostrar_explicacao(saida: dict, fatos, origem: str) -> None:
     with st.expander("Como conversar com cada cliente sobre preço"):
         for c in saida["clientes"]:
             st.markdown(f"**{fatos.nomes[c['id']]}** — {c['argumento']}")
-    st.caption(f"Texto escrito por IA (Gemini) {origem}. Os {len(numeros(texto))} números citados foram conferidos "
+    autoria = "escrito por IA (Gemini), revisado à mão" if saida.get("revisado_em") else "escrito por IA (Gemini)"
+    st.caption(f"Texto {autoria} {origem}. Os {len(numeros(texto))} números citados foram conferidos "
                "um a um contra o cálculo: texto com número que não existe no cálculo é descartado.")
 
 

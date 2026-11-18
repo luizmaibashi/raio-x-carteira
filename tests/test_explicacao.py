@@ -120,4 +120,4 @@ def test_tela_mostra_explicacao_gravada_do_perfil(perfil, monkeypatch):
     at = AppTest.from_file(str(ARQ.parent.parent / "app.py"), default_timeout=30).run()
     at.selectbox(key="perfil").set_value(perfil).run()
     assert not at.exception, at.exception
-    assert any("Texto escrito por IA" in c.value for c in at.caption)
+    assert any("Texto escrito por IA (Gemini), revisado à mão e gravado" in c.value for c in at.caption)

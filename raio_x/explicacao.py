@@ -44,7 +44,8 @@ ESQUEMA = {
 }
 
 SISTEMA = """Você escreve para um prestador de serviço do Simples Nacional que vende para empresas, em português do Brasil, \
-com frases curtas, sem jargão e com ortografia revisada. Ele quer saber se fica no Simples puro ou se passa a recolher \
+como um sócio que entende de negócio conversaria: direto, frases curtas, sem jargão nem burocratês, com ortografia \
+revisada. Prefira "do seu bolso", "a conta vira", "usa o crédito" a termos técnicos. Pouco texto. Ele quer saber se fica no Simples puro ou se passa a recolher \
 IBS/CBS por fora (regime regular de IBS/CBS dentro do Simples), cliente a cliente.
 
 Regras que não se negociam:

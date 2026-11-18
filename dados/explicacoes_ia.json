@@ -4,78 +4,151 @@
     "modelo": "gemini-3.1-flash-lite",
     "gerado_em": "2026-11-18T11:05:45-03:00",
     "numeros_conferidos": 7,
-    "resumo": "Você deve permanecer no Simples puro para o ano de 2027. Ao optar por recolher IBS/CBS por fora, você perderia R$ 5.450,83 por ano. Atualmente, apenas 76,7% da sua receita vem de clientes que aproveitam crédito, sendo necessário atingir 98,9% para compensar a troca. Para que essa mudança fosse vantajosa, você precisaria manter 57% do preço atual com esses clientes. Leve esta análise ao seu contador antes de qualquer decisão.",
+    "resumo": "Fique no Simples puro em 2027: recolher IBS/CBS por fora tiraria R$ 5.450,83 do seu bolso por ano. Só 76,7% do seu faturamento vem de clientes que usam o crédito, e a troca só se paga a partir de 98,9%. Ela passaria a valer se você conseguisse manter 57% do preço, o que hoje é aposta. Leve a conta ao seu contador antes de decidir.",
     "clientes": [
       {
         "id": "C1",
-        "argumento": "Como você aproveita o crédito, farei o destaque do IBS/CBS na nota fiscal e o seu custo não muda."
+        "argumento": "Você abate o IBS/CBS que vem destacado na minha nota, então o seu custo fica igual."
       },
       {
         "id": "C2",
-        "argumento": "Você recebe o crédito do IBS/CBS destacado na nota, portanto o seu custo não muda com esta alteração."
+        "argumento": "O imposto da nota volta para você como crédito; na prática, o seu custo não muda."
       },
       {
         "id": "C3",
-        "argumento": "Como você não aproveita o crédito, eu perderia R$ 3.640,95 por ano e talvez precisemos rever o preço."
+        "argumento": "Você não usa o crédito do IBS/CBS. Se eu recolher por fora, o imposto sai da minha margem: R$ 3.640,95 a menos por ano, e a gente precisaria rever o preço."
       },
       {
         "id": "C4",
-        "argumento": "O destaque do imposto na nota permitirá que você aproveite o crédito, garantindo que o seu custo não muda."
+        "argumento": "Com o crédito do IBS/CBS da nota, o seu custo continua o mesmo."
       },
       {
         "id": "C5",
-        "argumento": "Como você não aproveita o crédito, eu perderia R$ 2.022,75 por ano e talvez seja necessário ajustar o nosso preço."
+        "argumento": "Você não usa o crédito do IBS/CBS. Se eu recolher por fora, deixo de ganhar R$ 2.022,75 por ano com você, então teríamos de conversar sobre o preço."
       }
-    ]
+    ],
+    "texto_original_ia": {
+      "resumo": "Você deve permanecer no Simples puro para o ano de 2027. Ao optar por recolher IBS/CBS por fora, você perderia R$ 5.450,83 por ano. Atualmente, apenas 76,7% da sua receita vem de clientes que aproveitam crédito, sendo necessário atingir 98,9% para compensar a troca. Para que essa mudança fosse vantajosa, você precisaria manter 57% do preço atual com esses clientes. Leve esta análise ao seu contador antes de qualquer decisão.",
+      "clientes": [
+        {
+          "id": "C1",
+          "argumento": "Como você aproveita o crédito, farei o destaque do IBS/CBS na nota fiscal e o seu custo não muda."
+        },
+        {
+          "id": "C2",
+          "argumento": "Você recebe o crédito do IBS/CBS destacado na nota, portanto o seu custo não muda com esta alteração."
+        },
+        {
+          "id": "C3",
+          "argumento": "Como você não aproveita o crédito, eu perderia R$ 3.640,95 por ano e talvez precisemos rever o preço."
+        },
+        {
+          "id": "C4",
+          "argumento": "O destaque do imposto na nota permitirá que você aproveite o crédito, garantindo que o seu custo não muda."
+        },
+        {
+          "id": "C5",
+          "argumento": "Como você não aproveita o crédito, eu perderia R$ 2.022,75 por ano e talvez seja necessário ajustar o nosso preço."
+        }
+      ]
+    },
+    "revisado_em": "2026-11-18T11:12:07-03:00",
+    "revisao": "Editado à mão para linguagem de negócio, a partir do texto da IA guardado em texto_original_ia. Números conferidos de novo pelo verificador."
   },
   "5b79c1d12d9b5a93": {
     "perfil": "Consultora de TI",
     "modelo": "gemini-3.1-flash-lite",
     "gerado_em": "2026-11-18T11:05:46-03:00",
-    "numeros_conferidos": 3,
-    "resumo": "Você ganharia R$ 503,15 por ano se passasse a recolher IBS/CBS por fora. Como 100,0% da sua receita vem de clientes que aproveitam crédito, você supera o mínimo de 98,5% necessário para compensar a troca. Com esse cenário, você não precisa alterar o preço para tornar o modelo vantajoso. Leve este estudo ao seu contador para avaliar a decisão.",
+    "numeros_conferidos": 4,
+    "resumo": "Para você, recolher IBS/CBS por fora compensa: são R$ 503,15 a mais por ano em 2027. Todo o seu faturamento (100,0%) vem de empresas que usam o crédito, acima do mínimo de 98,5% para a troca valer, e nem é preciso mexer no preço. O ganho é modesto, então confirme com o seu contador antes de mudar.",
     "clientes": [
       {
         "id": "C1",
-        "argumento": "Ao destacar o IBS/CBS na nota, você pode aproveitar o crédito do imposto, garantindo que o custo do serviço para você não mude."
+        "argumento": "Você abate o IBS/CBS que vem destacado na minha nota, então o seu custo fica igual."
       },
       {
         "id": "C2",
-        "argumento": "Você poderá aproveitar o crédito do IBS/CBS destacado na nota, portanto, o custo do serviço para você não mude."
+        "argumento": "O imposto da nota volta para você como crédito; na prática, o seu custo não muda."
       },
       {
         "id": "C3",
-        "argumento": "Com o destaque do IBS/CBS na nota, você terá direito ao crédito do imposto e, por isso, o custo do serviço para você não mude."
+        "argumento": "Com o crédito do IBS/CBS, o serviço sai para você pelo mesmo custo de hoje."
       }
-    ]
+    ],
+    "texto_original_ia": {
+      "resumo": "Você ganharia R$ 503,15 por ano se passasse a recolher IBS/CBS por fora. Como 100,0% da sua receita vem de clientes que aproveitam crédito, você supera o mínimo de 98,5% necessário para compensar a troca. Com esse cenário, você não precisa alterar o preço para tornar o modelo vantajoso. Leve este estudo ao seu contador para avaliar a decisão.",
+      "clientes": [
+        {
+          "id": "C1",
+          "argumento": "Ao destacar o IBS/CBS na nota, você pode aproveitar o crédito do imposto, garantindo que o custo do serviço para você não mude."
+        },
+        {
+          "id": "C2",
+          "argumento": "Você poderá aproveitar o crédito do IBS/CBS destacado na nota, portanto, o custo do serviço para você não mude."
+        },
+        {
+          "id": "C3",
+          "argumento": "Com o destaque do IBS/CBS na nota, você terá direito ao crédito do imposto e, por isso, o custo do serviço para você não mude."
+        }
+      ]
+    },
+    "revisado_em": "2026-11-18T11:12:07-03:00",
+    "revisao": "Editado à mão para linguagem de negócio, a partir do texto da IA guardado em texto_original_ia. Números conferidos de novo pelo verificador."
   },
   "26b89bfba5c28242": {
     "perfil": "Contador",
     "modelo": "gemini-3.1-flash-lite",
     "gerado_em": "2026-11-18T11:06:59-03:00",
     "numeros_conferidos": 6,
-    "resumo": "O melhor para o seu negócio em 2027 é permanecer no Simples puro. Se você recolhesse por fora, perderia R$ 365,61 por ano. Hoje, 96,2% da sua receita vem de clientes que aproveitam crédito, enquanto o mínimo necessário para compensar seria 98,3%. Para tornar essa mudança vantajosa, você precisaria manter 8% do preço, mas isso não é garantido. Leve esses números para análise com seu contador antes de qualquer decisão.",
+    "resumo": "Fique no Simples puro em 2027: recolher por fora tiraria R$ 365,61 por ano do seu resultado. É por pouco: 96,2% do faturamento vem de clientes que usam o crédito, e a troca só se paga a partir de 98,3%. Se você conseguir manter 8% do preço, a conta vira. Como a margem é curta, peça uma segunda opinião antes de decidir.",
     "clientes": [
       {
         "id": "C1",
-        "argumento": "Ao recolher por fora, você passa a receber o crédito do IBS/CBS destacado na minha nota, garantindo que o seu custo não mude."
+        "argumento": "Você abate o IBS/CBS que vem destacado na minha nota, então o seu custo fica igual."
       },
       {
         "id": "C2",
-        "argumento": "Com o destaque do IBS/CBS na nota, você pode aproveitar o crédito, o que mantém o seu custo sem alteração."
+        "argumento": "O imposto da nota volta para você como crédito; na prática, o seu custo não muda."
       },
       {
         "id": "C3",
-        "argumento": "Você poderá aproveitar o crédito de IBS/CBS destacado na minha nota, mantendo o seu custo inalterado."
+        "argumento": "Com o crédito do IBS/CBS, o serviço sai para você pelo mesmo custo de hoje."
       },
       {
         "id": "C4",
-        "argumento": "O crédito de IBS/CBS destacado na minha nota permitirá que você mantenha o seu custo no mesmo nível de antes."
+        "argumento": "O seu custo não sobe: o imposto destacado na nota vira crédito para você."
       },
       {
         "id": "C5",
-        "argumento": "Como você não aproveita o crédito, eu absorveria uma perda anual de R$ 651,56, então talvez precisemos rever o nosso preço."
+        "argumento": "Você não usa o crédito do IBS/CBS. Se eu recolher por fora, o imposto sai da minha margem: R$ 651,56 a menos por ano, e a gente precisaria rever o preço."
       }
-    ]
+    ],
+    "texto_original_ia": {
+      "resumo": "O melhor para o seu negócio em 2027 é permanecer no Simples puro. Se você recolhesse por fora, perderia R$ 365,61 por ano. Hoje, 96,2% da sua receita vem de clientes que aproveitam crédito, enquanto o mínimo necessário para compensar seria 98,3%. Para tornar essa mudança vantajosa, você precisaria manter 8% do preço, mas isso não é garantido. Leve esses números para análise com seu contador antes de qualquer decisão.",
+      "clientes": [
+        {
+          "id": "C1",
+          "argumento": "Ao recolher por fora, você passa a receber o crédito do IBS/CBS destacado na minha nota, garantindo que o seu custo não mude."
+        },
+        {
+          "id": "C2",
+          "argumento": "Com o destaque do IBS/CBS na nota, você pode aproveitar o crédito, o que mantém o seu custo sem alteração."
+        },
+        {
+          "id": "C3",
+          "argumento": "Você poderá aproveitar o crédito de IBS/CBS destacado na minha nota, mantendo o seu custo inalterado."
+        },
+        {
+          "id": "C4",
+          "argumento": "O crédito de IBS/CBS destacado na minha nota permitirá que você mantenha o seu custo no mesmo nível de antes."
+        },
+        {
+          "id": "C5",
+          "argumento": "Como você não aproveita o crédito, eu absorveria uma perda anual de R$ 651,56, então talvez precisemos rever o nosso preço."
+        }
+      ]
+    },
+    "revisado_em": "2026-11-18T11:12:07-03:00",
+    "revisao": "Editado à mão para linguagem de negócio, a partir do texto da IA guardado em texto_original_ia. Números conferidos de novo pelo verificador."
   }
 }
