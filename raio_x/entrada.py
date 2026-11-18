@@ -53,6 +53,11 @@ def valor_br(texto: str) -> Decimal:
 
 
 def ler_carteira_csv(origem: str | Path | io.TextIOBase) -> list[Cliente]:
+    return [Cliente(nome, valor, TOMADORES_CREDITO[tom]) for nome, valor, tom in ler_linhas_csv(origem)]
+
+
+def ler_linhas_csv(origem: str | Path | io.TextIOBase) -> list[tuple[str, Decimal, str]]:
+    """Valida e devolve (cliente, valor_12m, tomador) por linha."""
     texto = Path(origem).read_text(encoding="utf-8-sig") if isinstance(origem, (str, Path)) else origem.read()
     linhas = [l for l in texto.splitlines() if l.strip()]
     if not linhas:
@@ -84,7 +89,7 @@ def ler_carteira_csv(origem: str | Path | io.TextIOBase) -> list[Cliente]:
         if valor <= 0:
             raise ErroEntrada(f"linha {n}: valor precisa ser positivo")
         nomes.add(nome)
-        clientes.append(Cliente(nome, valor, TOMADORES_CREDITO[tomador]))
+        clientes.append((nome, valor, tomador))
     if not clientes:
         raise ErroEntrada("nenhum cliente no arquivo")
     return clientes
