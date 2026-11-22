@@ -32,7 +32,17 @@ def test_veredito_que_depende_do_credito_do_maior_cliente():
     carteira = [_c("Banco", 180_000, True), _c("Seguradora", 150_000, True), _c("Varejo", 90_000, True)]
     x = lacunas.concentracao(carteira, 126_000, 2027, T, 0)
     assert x.titulo == "Sua decisão depende de um cliente"
-    assert "se ele deixar de usar" in x.texto
+    assert "esse cliente usa o crédito" in x.texto
+
+
+@pytest.mark.parametrize("cred_resto", [True, False])
+def test_texto_de_concentracao_sem_pronome_de_genero(cred_resto):
+    """Nome do cliente pode ser feminino (Indústria, Seguradora): o texto não pode dizer ele/nele/dele."""
+    import re
+    carteira = [_c("Indústria Alfa", 180_000, True), _c("B", 150_000, cred_resto), _c("C", 90_000, cred_resto)]
+    x = lacunas.concentracao(carteira, 126_000, 2027, T, 0)
+    assert x is not None
+    assert not re.search(r"\b(ele|ela|nele|nela|dele|dela)\b", x.texto, re.IGNORECASE), x.texto
 
 
 @pytest.mark.parametrize("dias, alerta", [(0, False), (30, False), (31, True), (90, True)])

@@ -42,12 +42,13 @@ def concentracao(clientes: list[Cliente], folha12, ano: int, t, r, k=0) -> Lacun
     if maior.cred and ganho > 0:
         sem_credito = [replace(c, cred=False) if c is maior else c for c in clientes]
         if _diferenca(sem_credito, folha12, ano, t, r, k) <= 0:
-            texto += ("Recolher por fora só compensa porque ele usa o crédito: se ele deixar de usar (por exemplo, "
-                      "se migrar para o Simples), a conta vira a favor do Simples puro. Confirme o regime dele antes "
-                      "de optar.")
+            # Texto sem pronome de gênero: o nome do cliente pode ser masculino ou feminino.
+            texto += ("Recolher por fora só compensa porque esse cliente usa o crédito: se deixar de usar (por "
+                      "exemplo, se migrar para o Simples), a conta vira a favor do Simples puro. Confirme o regime "
+                      "desse cliente antes de optar.")
             return Lacuna("concentracao", "Sua decisão depende de um cliente", texto, "P20")
-    texto += ("Uma mudança nele (preço, regime ou a saída dele) mexe no resultado da carteira inteira: refaça a "
-              "conta se algo mudar com esse cliente.")
+    texto += ("Qualquer mudança nesse cliente (preço, regime ou saída) mexe no resultado da carteira inteira: "
+              "refaça a conta se algo mudar.")
     return Lacuna("concentracao", "Receita concentrada", texto, "P20")
 
 
